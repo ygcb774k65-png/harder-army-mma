@@ -359,6 +359,7 @@
                 ucret: Number(document.getElementById('m-ucret').value),
                 total_lessons: Number(document.getElementById('m-toplam-ders').value) || 0,
                 completed_lessons: Number(document.getElementById('m-yapilan-ders').value) || 0,
+                baslangic_tarihi: new Date().toISOString().split('T')[0],
                 bitis_tarihi: document.getElementById('m-bitis').value,
                 durum: document.getElementById('m-durum').value
             };
@@ -479,6 +480,7 @@
             document.getElementById('uye-modal').classList.remove('hidden');
         }
         function closeUyeModal() { document.getElementById('uye-modal').classList.add('hidden'); }
+        function openKasaModal() { document.getElementById('kasa-modal').classList.add('hidden'); } // Düzeltme
         function openKasaModal() { document.getElementById('kasa-modal').classList.remove('hidden'); }
         function closeKasaModal() { document.getElementById('kasa-modal').classList.add('hidden'); }
     </script>
