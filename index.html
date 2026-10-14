@@ -194,34 +194,23 @@
         </div>
     </div>
 
-    <!-- MODAL 2: SEANS TAKİP VE TARİH/SAAT SEÇİM PENCERESİ -->
+    <!-- MODAL 2: SEANS TAKİP VE TARİH/SAAT SEÇİMİ -->
     <div id="seans-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-zinc-900 border border-zinc-800 w-full max-w-lg rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
-            <!-- Modal Başlık -->
             <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
                 <h3 class="text-base font-bold text-yellow-400" id="seans-modal-title">Seans Takibi</h3>
                 <button onclick="closeSeansModal()" class="w-7 h-7 bg-red-600/20 text-red-500 rounded-full flex items-center justify-center hover:bg-red-600 hover:text-white transition">
                     <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
-
-            <!-- Bilgilendirme Kutusu -->
             <div class="bg-zinc-800/60 p-3 rounded-xl border border-zinc-700/60 text-center text-xs text-gray-300 flex items-center justify-center gap-3">
                 <i class="fa-solid fa-clock text-green-500 text-lg"></i>
                 <span>Seansa tıklayarak özel tarih ve saat seçebilir, tamamlanan seansın zamanını ayarlayabilirsiniz.</span>
             </div>
-
-            <!-- Paket Etiketi -->
             <div class="bg-zinc-950 p-2.5 rounded-xl text-center border border-zinc-800">
                 <span id="seans-modal-paket" class="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">Branş Paket</span>
             </div>
-
-            <!-- Seans Kartları Listesi (Grid Düzeni) -->
-            <div id="seans-listesi-container" class="overflow-y-auto pr-1 space-y-3 flex-1 max-h-[45vh]">
-                <!-- Seans kartları JS ile eklenecek -->
-            </div>
-
-            <!-- Kapat Butonu -->
+            <div id="seans-listesi-container" class="overflow-y-auto pr-1 space-y-3 flex-1 max-h-[45vh]"></div>
             <div class="pt-2">
                 <button onclick="closeSeansModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-xl text-gray-300 font-bold text-xs transition">Kapat</button>
             </div>
@@ -233,7 +222,7 @@
         <div class="bg-zinc-900 border border-yellow-500/40 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
             <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
                 <h3 class="text-sm font-bold text-yellow-400" id="tarih-modal-baslik">Seans Tarih ve Saatini Belirle</h3>
-                <button onclick="closeTarihModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+                <button onclick="closeTarihModal()" class="text-gray-400 hover:text-base"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="space-y-3 text-xs">
                 <div>
@@ -258,14 +247,14 @@
             <form id="kasa-form" onsubmit="saveKasa(event)" class="space-y-3 text-xs">
                 <div>
                     <label class="block text-gray-400 mb-1">İşlem Türü *</label>
-                    <select id="k-tur" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
+                    <select id="k-tip" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
                         <option value="Gelir">Gelir (Aidat / Ekipman Satışı vb.)</option>
                         <option value="Gider">Gider (Kira / Ekipman / Fatura vb.)</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1">Açıklama *</label>
-                    <input type="text" id="k-aciklama" placeholder="Örn: Ekipman Satışı veya Salon Kirası" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
+                    <label class="block text-gray-400 mb-1">Açıklama / Başlık *</label>
+                    <input type="text" id="k-baslik" placeholder="Örn: Ekipman Satışı veya Salon Kirası" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
@@ -409,13 +398,15 @@
             } else {
                 response = await supabaseClient.from('uyeler').insert([payload]);
 
-                // OTOMATİK KASA GELİRİ ENTEGRASYONU
+                // KASA HAREKETLERİ TABLOSUNA OTOMATİK GELİR EKLEME (DOĞRU SÜTUNLAR İLE)
                 if (!response.error) {
-                    await supabaseClient.from('kasa').insert([{
-                        tur: 'Gelir',
-                        aciklama: `${adSoyad} - ${paket} Aidat Ödemesi`,
+                    const bugunTarih = new Date().toISOString().split('T')[0];
+                    await supabaseClient.from('kasa_hareketleri').insert([{
+                        tip: 'Gelir',
+                        baslik: `${adSoyad} - ${paket} Aidatı`,
                         tutar: ucret,
-                        kategori: 'Aidat'
+                        kategori: 'Aidat',
+                        tarih: bugunTarih
                     }]);
                 }
             }
@@ -475,11 +466,6 @@
             activeSeansIndex = index;
             document.getElementById('tarih-modal-baslik').innerText = `${index + 1}. Seans İçin Tarih & Saat`;
             
-            // Mevcut tarih varsa onu yaz, yoksa şu anki tarih/saati ayarla
-            let sessionDates = [];
-            try { sessionDates = typeof activeUyeForSeans.session_dates === 'string' ? JSON.parse(activeUyeForSeans.session_dates) : (activeUyeForSeans.session_dates || []); } catch(e) { sessionDates = []; }
-            
-            // HTML datetime-local formatı için uygun string oluşturulur (YYYY-MM-DDTHH:mm)
             const now = new Date();
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -496,7 +482,6 @@
             const val = document.getElementById('secilen-tarih-saat').value;
             if(!val) { alert('Lütfen tarih ve saat seçin!'); return; }
 
-            // Okunaklı formata çevir (Örn: 14 Eki 2026 - 19:30)
             const d = new Date(val);
             const formatted = `${d.getDate()} ${d.toLocaleString('tr-TR', { month: 'short' })} ${d.getFullYear()} - ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 
@@ -578,23 +563,26 @@
         }
 
         async function loadKasa() {
-            const { data: kasa, error } = await supabaseClient.from('kasa').select('*').order('created_at', { ascending: false });
+            const { data: kasa, error } = await supabaseClient.from('kasa_hareketleri').select('*').order('created_at', { ascending: false });
             if (error) { console.error("Kasa yüklenemedi:", error.message); return; }
             const tbody = document.getElementById('kasa-listesi');
             tbody.innerHTML = '';
 
             let toplamKasa = 0;
             (kasa || []).forEach(k => {
-                if(k.tur === 'Gelir') toplamKasa += Number(k.tutar);
-                else toplamKasa -= Number(k.tutar);
+                const tutarVal = Number(k.tutar) || 0;
+                if(k.tip === 'Gelir') toplamKasa += tutarVal;
+                else toplamKasa -= tutarVal;
+
+                const tarihGosterim = k.tarih ? new Date(k.tarih).toLocaleDateString('tr-TR') : '-';
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-zinc-800/40">
-                        <td class="p-3.5 text-gray-400">${new Date(k.created_at).toLocaleDateString('tr-TR')}</td>
-                        <td class="p-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${k.tur === 'Gelir' ? 'bg-green-950 text-green-400' : 'bg-red-950 text-red-400'}">${k.tur}</span></td>
-                        <td class="p-3.5 font-medium text-white">${k.aciklama}</td>
+                        <td class="p-3.5 text-gray-400">${tarihGosterim}</td>
+                        <td class="p-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${k.tip === 'Gelir' ? 'bg-green-950 text-green-400' : 'bg-red-950 text-red-400'}">${k.tip || 'Gelir'}</span></td>
+                        <td class="p-3.5 font-medium text-white">${k.baslik || '-'}</td>
                         <td class="p-3.5 text-gray-400">${k.kategori || '-'}</td>
-                        <td class="p-3.5 text-right font-bold ${k.tur === 'Gelir' ? 'text-green-400' : 'text-red-400'}">${k.tur === 'Gelir' ? '+' : '-'}₺${k.tutar}</td>
+                        <td class="p-3.5 text-right font-bold ${k.tip === 'Gelir' ? 'text-green-400' : 'text-red-400'}">${k.tip === 'Gelir' ? '+' : '-'}₺${tutarVal}</td>
                     </tr>
                 `;
             });
@@ -603,13 +591,15 @@
 
         async function saveKasa(e) {
             e.preventDefault();
+            const bugunTarih = new Date().toISOString().split('T')[0];
             const payload = {
-                tur: document.getElementById('k-tur').value,
-                aciklama: document.getElementById('k-aciklama').value,
+                tip: document.getElementById('k-tip').value,
+                baslik: document.getElementById('k-baslik').value,
                 tutar: Number(document.getElementById('k-tutar').value),
-                kategori: document.getElementById('k-kategori').value
+                kategori: document.getElementById('k-kategori').value,
+                tarih: bugunTarih
             };
-            const { error } = await supabaseClient.from('kasa').insert([payload]);
+            const { error } = await supabaseClient.from('kasa_hareketleri').insert([payload]);
             if (error) { alert('Hata: ' + error.message); return; }
             closeKasaModal();
             loadKasa();
