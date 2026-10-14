@@ -1,12 +1,9 @@
-Anladım kral! WhatsApp butonu kalıyor. Kodun hem yeni branşları içeren hem de WhatsApp butonunun aktif olduğu tertemiz, en güncel hali hemen aşağıda:
-
-```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harder Army MMA - Yönetim Paneli</title>
+    <title>Harder Army MMA - Yönetim ve Öğrenci Paneli</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -26,9 +23,14 @@ Anladım kral! WhatsApp butonu kalıyor. Kodun hem yeni branşları içeren hem 
                     <p class="text-[10px] text-gray-400 font-medium tracking-widest mt-0.5">BAHÇEŞEHİR MMA</p>
                 </div>
             </div>
-            <button onclick="toggleSetup()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-gray-400 px-3 py-1.5 rounded-lg border border-zinc-800 transition">
-                <i class="fa-solid fa-gear mr-1"></i> Ayarlar
-            </button>
+            <div class="flex gap-2">
+                <button onclick="switchMainView('ogrenci')" id="btn-view-ogrenci" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-red-400 px-3 py-1.5 rounded-lg border border-red-900/40 transition font-bold">
+                    <i class="fa-solid fa-user mr-1"></i> Öğrenci Girişi
+                </button>
+                <button onclick="toggleSetup()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-gray-400 px-3 py-1.5 rounded-lg border border-zinc-800 transition">
+                    <i class="fa-solid fa-gear mr-1"></i> Ayarlar
+                </button>
+            </div>
         </div>
     </header>
 
@@ -47,94 +49,148 @@ Anladım kral! WhatsApp butonu kalıyor. Kodun hem yeni branşları içeren hem 
             <button onclick="saveConfig()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 rounded-lg transition">Bağlantıyı Kaydet</button>
         </div>
 
-        <!-- İstatistik Özet Kartları -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
-                <p class="text-gray-400 text-[11px] font-medium">Aktif Sporcu</p>
-                <p id="stat-aktif" class="text-2xl font-black text-white mt-1">0</p>
+        <!-- ANA GÖRÜNÜM 1: YÖNETİM PANELİ -->
+        <div id="view-yonetim" class="space-y-6">
+            <!-- İstatistik Özet Kartları -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
+                    <p class="text-gray-400 text-[11px] font-medium">Aktif Sporcu</p>
+                    <p id="stat-aktif" class="text-2xl font-black text-white mt-1">0</p>
+                </div>
+                <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
+                    <p class="text-gray-400 text-[11px] font-medium">Bitişi Yaklaşan</p>
+                    <p id="stat-biten" class="text-2xl font-black text-yellow-500 mt-1">0</p>
+                </div>
+                <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
+                    <p class="text-gray-400 text-[11px] font-medium">Kasa Bakiyesi</p>
+                    <p id="stat-kasa" class="text-2xl font-black text-green-500 mt-1">₺0</p>
+                </div>
+                <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
+                    <p class="text-gray-400 text-[11px] font-medium">Toplam Kayıt</p>
+                    <p id="stat-toplam" class="text-2xl font-black text-gray-300 mt-1">0</p>
+                </div>
             </div>
-            <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
-                <p class="text-gray-400 text-[11px] font-medium">Bitişi Yaklaşan</p>
-                <p id="stat-biten" class="text-2xl font-black text-yellow-500 mt-1">0</p>
-            </div>
-            <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
-                <p class="text-gray-400 text-[11px] font-medium">Kasa Bakiyesi</p>
-                <p id="stat-kasa" class="text-2xl font-black text-green-500 mt-1">₺0</p>
-            </div>
-            <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
-                <p class="text-gray-400 text-[11px] font-medium">Toplam Kayıt</p>
-                <p id="stat-toplam" class="text-2xl font-black text-gray-300 mt-1">0</p>
-            </div>
-        </div>
 
-        <!-- Sekme Butonları -->
-        <div class="flex bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs font-bold">
-            <button onclick="switchTab('uyeler')" id="tab-uyeler" class="flex-1 py-2.5 rounded-lg bg-red-600 text-white transition">
-                <i class="fa-solid fa-users mr-1.5"></i> Üyeler & Seans Takibi
-            </button>
-            <button onclick="switchTab('kasa')" id="tab-kasa" class="flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition">
-                <i class="fa-solid fa-wallet mr-1.5"></i> Kasa / Gelir-Gider
-            </button>
-        </div>
-
-        <!-- SEKME 1: ÜYE YÖNETİMİ -->
-        <div id="sec-uyeler" class="space-y-4">
-            <div class="flex flex-col sm:flex-row justify-between gap-3">
-                <input type="text" id="uye-ara" oninput="filterUyeler()" placeholder="Sporcu Ara (Ad, Telefon)..." class="bg-zinc-900 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600 flex-1">
-                <button onclick="openUyeModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-950/40 transition">
-                    <i class="fa-solid fa-user-plus"></i> Yeni Üye Ekle
+            <!-- Sekme Butonları -->
+            <div class="flex bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs font-bold">
+                <button onclick="switchTab('uyeler')" id="tab-uyeler" class="flex-1 py-2.5 rounded-lg bg-red-600 text-white transition">
+                    <i class="fa-solid fa-users mr-1.5"></i> Üyeler & Seans Takibi
+                </button>
+                <button onclick="switchTab('kasa')" id="tab-kasa" class="flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-wallet mr-1.5"></i> Kasa / Gelir-Gider
                 </button>
             </div>
 
-            <div class="bg-zinc-900 rounded-xl border border-zinc-800/80 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs text-gray-300">
-                        <thead class="bg-zinc-950 text-gray-400 font-semibold border-b border-zinc-800">
-                            <tr>
-                                <th class="p-3.5">Sporcu</th>
-                                <th class="p-3.5">İletişim</th>
-                                <th class="p-3.5">Branş / Paket</th>
-                                <th class="p-3.5">Seans Takibi</th>
-                                <th class="p-3.5">Ücret</th>
-                                <th class="p-3.5">Bitiş Tarihi</th>
-                                <th class="p-3.5">Durum</th>
-                                <th class="p-3.5 text-right">İşlem</th>
-                            </tr>
-                        </thead>
-                        <tbody id="uye-listesi" class="divide-y divide-zinc-800/50">
-                            <tr><td colspan="8" class="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
-                        </tbody>
-                    </table>
+            <!-- SEKME 1: ÜYE YÖNETİMİ -->
+            <div id="sec-uyeler" class="space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between gap-3">
+                    <input type="text" id="uye-ara" oninput="filterUyeler()" placeholder="Sporcu Ara (Ad, Telefon)..." class="bg-zinc-900 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600 flex-1">
+                    <button onclick="openUyeModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-950/40 transition">
+                        <i class="fa-solid fa-user-plus"></i> Yeni Üye Ekle
+                    </button>
+                </div>
+
+                <div class="bg-zinc-900 rounded-xl border border-zinc-800/80 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-gray-300">
+                            <thead class="bg-zinc-950 text-gray-400 font-semibold border-b border-zinc-800">
+                                <tr>
+                                    <th class="p-3.5">Sporcu</th>
+                                    <th class="p-3.5">İletişim</th>
+                                    <th class="p-3.5">Branş / Paket</th>
+                                    <th class="p-3.5">Seans Takibi</th>
+                                    <th class="p-3.5">Ücret</th>
+                                    <th class="p-3.5">Bitiş Tarihi</th>
+                                    <th class="p-3.5">Durum</th>
+                                    <th class="p-3.5 text-right">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="uye-listesi" class="divide-y divide-zinc-800/50">
+                                <tr><td colspan="8" class="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEKME 2: KASA -->
+            <div id="sec-kasa" class="space-y-4 hidden">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-sm font-bold text-gray-300">Kasa Hareketleri (Gelir & Gider)</h2>
+                    <button onclick="openKasaModal()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
+                        <i class="fa-solid fa-plus"></i> Gelir / Gider Ekle
+                    </button>
+                </div>
+
+                <div class="bg-zinc-900 rounded-xl border border-zinc-800/80 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-gray-300">
+                            <thead class="bg-zinc-950 text-gray-400 font-semibold border-b border-zinc-800">
+                                <tr>
+                                    <th class="p-3.5">Tarih</th>
+                                    <th class="p-3.5">Tür</th>
+                                    <th class="p-3.5">Açıklama</th>
+                                    <th class="p-3.5">Kategori</th>
+                                    <th class="p-3.5 text-right">Tutar</th>
+                                    <th class="p-3.5 text-right">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kasa-listesi" class="divide-y divide-zinc-800/50">
+                                <tr><td colspan="6" class="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- SEKME 2: KASA -->
-        <div id="sec-kasa" class="space-y-4 hidden">
-            <div class="flex justify-between items-center">
-                <h2 class="text-sm font-bold text-gray-300">Kasa Hareketleri (Gelir & Gider)</h2>
-                <button onclick="openKasaModal()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
-                    <i class="fa-solid fa-plus"></i> Gelir / Gider Ekle
-                </button>
+        <!-- ANA GÖRÜNÜM 2: ÖĞRENCİ GİRİŞ & TAKİP EKRANI -->
+        <div id="view-ogrenci" class="space-y-6 hidden">
+            <div class="bg-zinc-900 border border-red-900/50 rounded-2xl p-6 max-w-md mx-auto shadow-2xl space-y-4">
+                <div class="text-center space-y-1">
+                    <h2 class="text-lg font-black text-red-500">ÖĞRENCİ SEANS & ÜYELİK TAKİBİ</h2>
+                    <p class="text-xs text-gray-400">Kayıtlı telefon numaranızı girerek bilgilerinize ulaşabilirsiniz.</p>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-gray-400 text-xs mb-1">Telefon Numarası</label>
+                        <input type="tel" id="ogrenci-telefon-input" placeholder="05xxxxxxxx" class="w-full bg-black border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600">
+                    </div>
+                    <button onclick="ogrenciGirisYap()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-red-950/50">
+                        Bilgilerimi Görüntüle
+                    </button>
+                    <div class="text-center pt-2">
+                        <button onclick="openSozlesmeModal()" class="text-[11px] text-gray-400 hover:text-red-400 underline transition">
+                            <i class="fa-solid fa-file-contract mr-1"></i> Üyelik ve Salon Sözleşmesi / Kuralları
+                        </button>
+                    </div>
+                </div>
+                <div class="pt-2 text-center">
+                    <button onclick="switchMainView('yonetim')" class="text-xs text-zinc-500 hover:text-gray-300 transition">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Yönetici Paneline Geri Dön
+                    </button>
+                </div>
             </div>
 
-            <div class="bg-zinc-900 rounded-xl border border-zinc-800/80 overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs text-gray-300">
-                        <thead class="bg-zinc-950 text-gray-400 font-semibold border-b border-zinc-800">
-                            <tr>
-                                <th class="p-3.5">Tarih</th>
-                                <th class="p-3.5">Tür</th>
-                                <th class="p-3.5">Açıklama</th>
-                                <th class="p-3.5">Kategori</th>
-                                <th class="p-3.5 text-right">Tutar</th>
-                                <th class="p-3.5 text-right">İşlem</th>
-                            </tr>
-                        </thead>
-                        <tbody id="kasa-listesi" class="divide-y divide-zinc-800/50">
-                            <tr><td colspan="6" class="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
-                        </tbody>
-                    </table>
+            <!-- Öğrenci Profil Bilgi ve Seans Sonuç Alanı -->
+            <div id="ogrenci-detay-alani" class="hidden space-y-4 max-w-2xl mx-auto">
+                <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <span id="og-brans-badge" class="bg-red-600/20 text-red-500 border border-red-900/50 px-2.5 py-1 rounded-full text-[10px] font-bold">Branş</span>
+                        <h3 id="og-ad-soyad" class="text-lg font-black text-white mt-1.5">Sporcu Adı</h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Bitiş Tarihi: <strong id="og-bitis" class="text-yellow-400">-</strong></p>
+                    </div>
+                    <div class="bg-black/60 border border-zinc-800 p-3 rounded-xl text-center min-w-[140px]">
+                        <p class="text-[10px] text-gray-400">Kalan / Toplam Seans</p>
+                        <p class="text-sm font-black text-green-400 mt-0.5"><span id="og-kalan">0</span> / <span id="og-toplam">12</span></p>
+                    </div>
+                </div>
+
+                <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-xl space-y-3">
+                    <h4 class="text-xs font-bold text-gray-300"><i class="fa-solid fa-calendar-days mr-1.5 text-red-500"></i> Seans Geçmişim & Randevularım</h4>
+                    <div id="ogrenci-seans-listesi" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        <!-- Dinamik Seans Kutuları -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -155,39 +211,37 @@ Anladım kral! WhatsApp butonu kalıyor. Kodun hem yeni branşları içeren hem 
                     <input type="text" id="m-ad" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1">Telefon (WhatsApp için 05...)</label>
-                    <input type="tel" id="m-tel" placeholder="05xx xxx xx xx" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+                    <label class="block text-gray-400 mb-1">Telefon (Öğrenci Girişi İçin Gerekli) *</label>
+                    <input type="tel" id="m-tel" required placeholder="05xx xxx xx xx" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1">Branş / Paket *</label>
+                    <select id="m-paket" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+                        <option value="MMA Group">MMA Group</option>
+                        <option value="Boks">Boks</option>
+                        <option value="Kickboks / Muay Thai">Kickboks / Muay Thai</option>
+                        <option value="BJJ / Grappling">BJJ / Grappling</option>
+                        <option value="Güreş">Güreş</option>
+                        <option value="Özel Ders (PT)">Özel Ders (PT)</option>
+                        <option value="Düet Ders (2 Kişilik)">Düet Ders (2 Kişilik)</option>
+                        <option value="Grup PT / Small Group">Grup PT / Small Group</option>
+                        <option value="Çocuklar / Gençler MMA">Çocuklar / Gençler MMA</option>
+                        <option value="Kondisyon & Functional">Kondisyon & Functional</option>
+                    </select>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-gray-400 mb-1">Branş / Paket *</label>
-                        <select id="m-paket" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
-                            <option value="MMA Group">MMA Group</option>
-                            <option value="Boks">Boks</option>
-                            <option value="Kickboks / Muay Thai">Kickboks / Muay Thai</option>
-                            <option value="BJJ / Grappling">BJJ / Grappling</option>
-                            <option value="Güreş">Güreş</option>
-                            <option value="Özel Ders (PT)">Özel Ders (PT)</option>
-                            <option value="Düet Ders (2 Kişilik)">Düet Ders (2 Kişilik)</option>
-                            <option value="Grup PT / Small Group">Grup PT / Small Group</option>
-                            <option value="Çocuklar / Gençler MMA">Çocuklar / Gençler MMA</option>
-                            <option value="Kondisyon & Functional">Kondisyon & Functional</option>
-                        </select>
-                    </div>
                     <div>
                         <label class="block text-gray-400 mb-1">Aylık Ücret (₺) *</label>
                         <input type="number" id="m-ucret" required placeholder="1500" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
                     </div>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-gray-400 mb-1">Toplam Ders Sayısı</label>
                         <input type="number" id="m-toplam-ders" value="12" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
                     </div>
-                    <div>
-                        <label class="block text-gray-400 mb-1">Üyelik Bitiş Tarihi *</label>
-                        <input type="date" id="m-bitis" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
-                    </div>
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1">Üyelik Bitiş Tarihi *</label>
+                    <input type="date" id="m-bitis" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
                 </div>
                 <div>
                     <label class="block text-gray-400 mb-1">Durum *</label>
@@ -292,6 +346,32 @@ Anladım kral! WhatsApp butonu kalıyor. Kodun hem yeni branşları içeren hem 
         </div>
     </div>
 
+    <!-- MODAL 5: ÜYELİK VE SALON SÖZLEŞMESİ -->
+    <div id="sozlesme-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 border border-red-900/60 w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                <h3 class="text-sm font-bold text-red-500"><i class="fa-solid fa-file-contract mr-2"></i> HARDER ARMY MMA - ÜYELİK SÖZLEŞMESİ</h3>
+                <button onclick="closeSozlesmeModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="overflow-y-auto pr-2 space-y-3 text-xs text-gray-300 leading-relaxed">
+                <p><strong>1. TARAFLAR VE AMAÇ:</strong> İşbu sözleşme, Harder Army MMA (Bahçeşehir MMA) salonu ile salon hizmetlerinden faydalanan sporcu/üye arasında, dövüş sanatları ve kondisyon antrenmanları kurallarını belirlemek amacıyla düzenlenmiştir.</p>
+                
+                <p><strong>2. SAĞLIK VE RİSK BEYANI:</strong> Üye, MMA, Boks, Kickboks ve Grappling gibi temaslı dövüş sanatlarının doğası gereği sakatlanma riskleri barındırdığını kabul eder. Üyenin antrenmanlara katılmasına mani kronik bir rahatsızlığı, kalp veya ortopedik engeli bulunmadığı varsayılır. Sağlık durumundaki değişiklikleri eğitmene bildirmek üyenin sorumluluğundadır.</p>
+                
+                <p><strong>3. PAKET VE SEANS KURALLARI:</strong> Satın alınan seans paketleri ve üyelikler belirlenen süre (genellikle 1 ay / 30 gün) içinde kullanılmalıdır. Kullanılmayan veya hakkı düşen seanslar bir sonraki aya devretmez, iade veya nakit değişimi yapılamaz.</p>
+                
+                <p><strong>4. SALON DİSİPLİNİ VE EKİPMAN:</strong> Antrenmanlarda ağızlık (dişlik), bandaj, eldiven ve kaval koruma gibi zorunlu kişisel koruyucu ekipmanların kullanımı mecburidir. Salon içerisinde diğer üyeleri rahatsız edici, disipline aykırı veya sportmenlik dışı davranışlarda bulunan kişilerin üyeliği, ücret iadesi yapılmaksızın sonlandırılabilir.</p>
+                
+                <p><strong>5. GİZLİLİK VE KİŞİSEL VERİLER:</strong> Üyeye ait telefon ve iletişim bilgileri yalnızca salon içi duyurular, seans takibi ve bilgilendirme amacıyla saklanır, üçüncü şahıslarla paylaşılmaz.</p>
+                
+                <p class="text-center font-bold text-red-400 pt-2">Osu! Harder Army MMA ailesine hoş geldiniz.</p>
+            </div>
+            <div class="pt-2 border-t border-zinc-800">
+                <button onclick="closeSozlesmeModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition">Okudum ve Kabul Ediyorum</button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Uygulama Mantığı -->
     <script>
         let supabaseClient = null;
@@ -337,7 +417,25 @@ Anladım kral! WhatsApp butonu kalıyor. Kodun hem yeni branşları içeren hem 
             await loadKasa();
         }
 
-        // --- SEKME YÖNETİMİ ---
+        // --- GÖRÜNÜM VE SEKME GEÇİŞLERİ ---
+        function switchMainView(view) {
+            const vYonetim = document.getElementById('view-yonetim');
+            const vOgrenci = document.getElementById('view-ogrenci');
+            const btnOg = document.getElementById('btn-view-ogrenci');
+
+            if (view === 'ogrenci') {
+                vYonetim.classList.add('hidden');
+                vOgrenci.classList.remove('hidden');
+                btnOg.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> Yönetici Paneli';
+                btnOg.setAttribute('onclick', "switchMainView('yonetim')");
+            } else {
+                vYonetim.classList.remove('hidden');
+                vOgrenci.classList.add('hidden');
+                btnOg.innerHTML = '<i class="fa-solid fa-user mr-1"></i> Öğrenci Girişi';
+                btnOg.setAttribute('onclick', "switchMainView('ogrenci')");
+            }
+        }
+
         function switchTab(tab) {
             const secUyeler = document.getElementById('sec-uyeler');
             const secKasa = document.getElementById('sec-kasa');
@@ -356,6 +454,62 @@ Anladım kral! WhatsApp butonu kalıyor. Kodun hem yeni branşları içeren hem 
                 tabUyeler.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
             }
         }
+
+        // --- ÖĞRENCİ GİRİŞ VE TAKİP MANTIĞI ---
+        function ogrenciGirisYap() {
+            let tel = document.getElementById('ogrenci-telefon-input').value.trim();
+            if (!tel) { alert('Lütfen telefon numaranızı girin!'); return; }
+
+            // Telefon numarası temizliği eşleşme için
+            const temizTel = tel.replace(/\D/g, '');
+            const ogrenci = allUyeler.find(u => u.telefon && u.telefon.replace(/\D/g, '').includes(temizTel));
+
+            if (!ogrenci) {
+                alert('Bu telefon numarasına ait kayıtlı bir sporcu bulunamadı! Lütfen salon yöneticisi ile görüşün.');
+                return;
+            }
+
+            // Bilgileri ekrana bas
+            document.getElementById('og-ad-soyad').innerText = ogrenci.ad_soyad;
+            document.getElementById('og-brans-badge').innerText = ogrenci.paket;
+            document.getElementById('og-bitis').innerText = ogrenci.bitis_tarihi || '-';
+
+            const total = ogrenci.total_lessons || 12;
+            let sessionDates = [];
+            try { sessionDates = typeof ogrenci.session_dates === 'string' ? JSON.parse(ogrenci.session_dates) : (ogrenci.session_dates || []); } catch(e) { sessionDates = []; }
+            const completed = sessionDates.filter(d => d !== null && d !== undefined && d !== '').length;
+            const remaining = Math.max(0, total - completed);
+
+            document.getElementById('og-kalan').innerText = remaining;
+            document.getElementById('og-toplam').innerText = total;
+
+            const listContainer = document.getElementById('ogrenci-seans-listesi');
+            listContainer.innerHTML = '';
+
+            for (let i = 0; i < total; i++) {
+                const tarihStr = sessionDates[i];
+                const isCompleted = !!tarihStr;
+
+                listContainer.innerHTML += `
+                    <div class="flex flex-col items-center justify-center p-3 rounded-xl border text-center select-none ${isCompleted ? 'bg-zinc-800/80 border-green-500/50 shadow-md' : 'bg-black/60 border-zinc-800 opacity-60'}">
+                        <span class="text-xs font-bold ${isCompleted ? 'text-gray-200' : 'text-gray-400'} mb-1">${i + 1}. Seans</span>
+                        <div class="my-1">
+                            ${isCompleted 
+                                ? '<div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-black text-xs font-bold"><i class="fa-solid fa-check"></i></div>' 
+                                : '<div class="w-6 h-6 rounded-full border-2 border-zinc-700 bg-zinc-900"></div>'}
+                        </div>
+                        <span class="text-[9px] ${isCompleted ? 'text-green-400 font-semibold' : 'text-gray-500'} mt-1">
+                            ${isCompleted ? tarihStr : 'Bekliyor'}
+                        </span>
+                    </div>
+                `;
+            }
+
+            document.getElementById('ogrenci-detay-alani').classList.remove('hidden');
+        }
+
+        function openSozlesmeModal() { document.getElementById('sozlesme-modal').classList.remove('hidden'); }
+        function closeSozlesmeModal() { document.getElementById('sozlesme-modal').classList.add('hidden'); }
 
         // --- ÜYELER ---
         async function loadUyeler() {
@@ -385,7 +539,6 @@ Anladım kral! WhatsApp butonu kalıyor. Kodun hem yeni branşları içeren hem 
                 const completed = sessionDates.filter(d => d !== null && d !== undefined && d !== '').length;
                 const remaining = Math.max(0, total - completed);
 
-                // WhatsApp Butonu için numara temizleme ve hazırlık
                 let telClean = u.telefon ? u.telefon.replace(/\D/g, '') : '';
                 if (telClean.startsWith('0')) telClean = '9' + telClean;
                 else if (!telClean.startsWith('90') && telClean.length === 10) telClean = '90' + telClean;
@@ -433,9 +586,7 @@ Anladım kral! WhatsApp butonu kalıyor. Kodun hem yeni branşları içeren hem 
             document.getElementById('uye-modal').classList.remove('hidden');
         }
 
-        function closeUyeModal() {
-            document.getElementById('uye-modal').classList.add('hidden');
-        }
+        function closeUyeModal() { document.getElementById('uye-modal').classList.add('hidden'); }
 
         function editUye(id) {
             const u = allUyeler.find(item => item.id == id);
@@ -552,14 +703,8 @@ Anladım kral! WhatsApp butonu kalıyor. Kodun hem yeni branşları içeren hem 
             });
         }
 
-        function openKasaModal() {
-            document.getElementById('kasa-form').reset();
-            document.getElementById('kasa-modal').classList.remove('hidden');
-        }
-
-        function closeKasaModal() {
-            document.getElementById('kasa-modal').classList.add('hidden');
-        }
+        function openKasaModal() { document.getElementById('kasa-modal').classList.remove('hidden'); }
+        function closeKasaModal() { document.getElementById('kasa-modal').classList.add('hidden'); }
 
         async function saveKasa(e) {
             e.preventDefault();
@@ -706,5 +851,3 @@ Anladım kral! WhatsApp butonu kalıyor. Kodun hem yeni branşları içeren hem 
     </script>
 </body>
 </html>
-
-```
