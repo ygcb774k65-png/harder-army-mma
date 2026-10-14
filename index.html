@@ -194,7 +194,7 @@
         </div>
     </div>
 
-    <!-- MODAL 2: GÖRSELDEKİ BİREBİR SEANS TAKİP PENCERESİ -->
+    <!-- MODAL 2: SEANS TAKİP VE TARİH/SAAT SEÇİM PENCERESİ -->
     <div id="seans-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-zinc-900 border border-zinc-800 w-full max-w-lg rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
             <!-- Modal Başlık -->
@@ -207,8 +207,8 @@
 
             <!-- Bilgilendirme Kutusu -->
             <div class="bg-zinc-800/60 p-3 rounded-xl border border-zinc-700/60 text-center text-xs text-gray-300 flex items-center justify-center gap-3">
-                <i class="fa-solid fa-square-plus text-green-500 text-xl"></i>
-                <span>Tamamlanan seansların üzerine tıklayarak tarih ataması gerçekleştirebilirsiniz.</span>
+                <i class="fa-solid fa-clock text-green-500 text-lg"></i>
+                <span>Seansa tıklayarak özel tarih ve saat seçebilir, tamamlanan seansın zamanını ayarlayabilirsiniz.</span>
             </div>
 
             <!-- Paket Etiketi -->
@@ -217,7 +217,7 @@
             </div>
 
             <!-- Seans Kartları Listesi (Grid Düzeni) -->
-            <div id="seans-listesi-container" class="overflow-y-auto pr-1 space-y-3 flex-1 max-h-[50vh]">
+            <div id="seans-listesi-container" class="overflow-y-auto pr-1 space-y-3 flex-1 max-h-[45vh]">
                 <!-- Seans kartları JS ile eklenecek -->
             </div>
 
@@ -228,7 +228,27 @@
         </div>
     </div>
 
-    <!-- MODAL 3: KASA HAREKETİ EKLE -->
+    <!-- MODAL 3: SEANS TARİH/SAAT GÜNCELLEME ALT PENCERESİ -->
+    <div id="seans-tarih-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 border border-yellow-500/40 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                <h3 class="text-sm font-bold text-yellow-400" id="tarih-modal-baslik">Seans Tarih ve Saatini Belirle</h3>
+                <button onclick="closeTarihModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-gray-400 mb-1">Ders Tarihi ve Saati *</label>
+                    <input type="datetime-local" id="secilen-tarih-saat" class="w-full bg-black border border-zinc-800 p-3 rounded-lg text-white outline-none focus:border-yellow-500">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="seansiKaldir()" class="bg-red-950 hover:bg-red-900 text-red-400 px-3 py-2.5 rounded-lg font-bold">Seansı İptal Et</button>
+                    <button type="button" onclick="seansiKaydetOnayla()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-bold">Kaydet & Onayla</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: KASA HAREKETİ EKLE -->
     <div id="kasa-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl">
             <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
@@ -270,6 +290,7 @@
         let supabaseClient = null;
         let allUyeler = [];
         let activeUyeForSeans = null;
+        let activeSeansIndex = null;
 
         window.onload = function() {
             const savedUrl = localStorage.getItem('sb_url');
@@ -388,11 +409,11 @@
             } else {
                 response = await supabaseClient.from('uyeler').insert([payload]);
 
-                // OTOMATİK KASA GELİRİ EKLEME
+                // OTOMATİK KASA GELİRİ ENTEGRASYONU
                 if (!response.error) {
                     await supabaseClient.from('kasa').insert([{
                         tur: 'Gelir',
-                        aciklama: `${adSoyad} - ${paket} Aidatı`,
+                        aciklama: `${adSoyad} - ${paket} Aidat Ödemesi`,
                         tutar: ucret,
                         kategori: 'Aidat'
                     }]);
@@ -408,7 +429,7 @@
             loadData();
         }
 
-        // --- SEANS PENCERESİ (GÖRSELDEKİ BİREBİR TASARIM) ---
+        // --- SEANS PENCERESİ VE TARİH SEÇİMİ ---
         function openSeansModal(id) {
             const u = allUyeler.find(item => item.id == id);
             if (!u) return;
@@ -431,15 +452,15 @@
                 const isCompleted = !!tarihStr;
 
                 html += `
-                    <div onclick="toggleSeans(${i})" class="flex flex-col items-center justify-center p-3 rounded-xl border text-center cursor-pointer transition select-none ${isCompleted ? 'bg-zinc-800/80 border-green-500/50 shadow-md' : 'bg-black/60 border-zinc-800 hover:border-zinc-700 opacity-75'}">
+                    <div onclick="tiklaSeansKutusu(${i})" class="flex flex-col items-center justify-center p-3 rounded-xl border text-center cursor-pointer transition select-none ${isCompleted ? 'bg-zinc-800/80 border-green-500/50 shadow-md' : 'bg-black/60 border-zinc-800 hover:border-zinc-700 opacity-75'}">
                         <span class="text-xs font-bold ${isCompleted ? 'text-gray-200' : 'text-gray-400'} mb-1.5">${i + 1}. Seans</span>
                         <div class="my-1">
                             ${isCompleted 
                                 ? '<div class="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center text-black text-sm font-bold shadow-lg"><i class="fa-solid fa-check"></i></div>' 
                                 : '<div class="w-7 h-7 rounded-full border-2 border-zinc-700 bg-zinc-900"></div>'}
                         </div>
-                        <span class="text-[10px] ${isCompleted ? 'text-green-400 font-semibold' : 'text-gray-600'} mt-1.5 h-4 flex items-center justify-center">
-                            ${isCompleted ? tarihStr : 'Tarih Yok'}
+                        <span class="text-[9px] ${isCompleted ? 'text-green-400 font-semibold' : 'text-gray-600'} mt-1.5 h-4 flex items-center justify-center">
+                            ${isCompleted ? tarihStr : 'Tarih Seç'}
                         </span>
                     </div>
                 `;
@@ -450,17 +471,39 @@
             document.getElementById('seans-modal').classList.remove('hidden');
         }
 
-        async function toggleSeans(index) {
-            if (!activeUyeForSeans) return;
+        function tiklaSeansKutusu(index) {
+            activeSeansIndex = index;
+            document.getElementById('tarih-modal-baslik').innerText = `${index + 1}. Seans İçin Tarih & Saat`;
+            
+            // Mevcut tarih varsa onu yaz, yoksa şu anki tarih/saati ayarla
             let sessionDates = [];
             try { sessionDates = typeof activeUyeForSeans.session_dates === 'string' ? JSON.parse(activeUyeForSeans.session_dates) : (activeUyeForSeans.session_dates || []); } catch(e) { sessionDates = []; }
+            
+            // HTML datetime-local formatı için uygun string oluşturulur (YYYY-MM-DDTHH:mm)
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            document.getElementById('secilen-tarih-saat').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+            document.getElementById('seans-tarih-modal').classList.remove('hidden');
+        }
 
-            if (sessionDates[index]) {
-                sessionDates[index] = null;
-            } else {
-                const today = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
-                sessionDates[index] = today;
-            }
+        async function seansiKaydetOnayla() {
+            if (activeUyeForSeans === null || activeSeansIndex === null) return;
+            const val = document.getElementById('secilen-tarih-saat').value;
+            if(!val) { alert('Lütfen tarih ve saat seçin!'); return; }
+
+            // Okunaklı formata çevir (Örn: 14 Eki 2026 - 19:30)
+            const d = new Date(val);
+            const formatted = `${d.getDate()} ${d.toLocaleString('tr-TR', { month: 'short' })} ${d.getFullYear()} - ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+            let sessionDates = [];
+            try { sessionDates = typeof activeUyeForSeans.session_dates === 'string' ? JSON.parse(activeUyeForSeans.session_dates) : (activeUyeForSeans.session_dates || []); } catch(e) { sessionDates = []; }
+            
+            sessionDates[activeSeansIndex] = formatted;
 
             const { error } = await supabaseClient
                 .from('uyeler')
@@ -468,11 +511,35 @@
                 .eq('id', activeUyeForSeans.id);
 
             if (error) {
-                alert('Seans güncellenirken hata: ' + error.message);
+                alert('Seans kaydedilirken hata: ' + error.message);
                 return;
             }
 
             activeUyeForSeans.session_dates = sessionDates;
+            closeTarihModal();
+            openSeansModal(activeUyeForSeans.id);
+            loadUyeler();
+        }
+
+        async function seansiKaldir() {
+            if (activeUyeForSeans === null || activeSeansIndex === null) return;
+            let sessionDates = [];
+            try { sessionDates = typeof activeUyeForSeans.session_dates === 'string' ? JSON.parse(activeUyeForSeans.session_dates) : (activeUyeForSeans.session_dates || []); } catch(e) { sessionDates = []; }
+            
+            sessionDates[activeSeansIndex] = null;
+
+            const { error } = await supabaseClient
+                .from('uyeler')
+                .update({ session_dates: JSON.stringify(sessionDates) })
+                .eq('id', activeUyeForSeans.id);
+
+            if (error) {
+                alert('Seans iptal edilirken hata: ' + error.message);
+                return;
+            }
+
+            activeUyeForSeans.session_dates = sessionDates;
+            closeTarihModal();
             openSeansModal(activeUyeForSeans.id);
             loadUyeler();
         }
@@ -480,6 +547,11 @@
         function closeSeansModal() {
             document.getElementById('seans-modal').classList.add('hidden');
             activeUyeForSeans = null;
+        }
+
+        function closeTarihModal() {
+            document.getElementById('seans-tarih-modal').classList.add('hidden');
+            activeSeansIndex = null;
         }
 
         function editUye(id) {
