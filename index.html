@@ -12,11 +12,9 @@
 
     <!-- Header / Navbar -->
     <header class="bg-zinc-950 border-b border-red-900/40 p-4 sticky top-0 z-50 shadow-lg">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-3.5">
-                <!-- Geliştirilmiş Karanlık Tonlu HA Logosu -->
                 <div class="relative w-11 h-11 rounded-xl bg-gradient-to-br from-zinc-900 via-zinc-950 to-black border border-red-600/40 flex items-center justify-center shadow-xl shadow-red-950/30 overflow-hidden group">
-                    <!-- Arka plan parlama efekti -->
                     <div class="absolute inset-0 bg-red-600/10 group-hover:bg-red-600/20 transition duration-300"></div>
                     <span class="relative font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-600 text-base">HA</span>
                 </div>
@@ -25,13 +23,13 @@
                     <p class="text-[10px] text-gray-400 font-medium tracking-widest mt-0.5">BAHÇEŞEHİR MMA</p>
                 </div>
             </div>
-            <button onclick="toggleSetup()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-gray-400 px-3 py-1.5 rounded-lg border border-zinc-800">
+            <button onclick="toggleSetup()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-gray-400 px-3 py-1.5 rounded-lg border border-zinc-800 transition">
                 <i class="fa-solid fa-gear mr-1"></i> Ayarlar
             </button>
         </div>
     </header>
 
-    <div class="max-w-5xl mx-auto p-4 space-y-6">
+    <div class="max-w-6xl mx-auto p-4 space-y-6">
 
         <!-- Supabase Bağlantı Ayar Alanı -->
         <div id="setup-box" class="bg-zinc-900 border border-red-900/60 p-4 rounded-xl hidden shadow-xl">
@@ -61,8 +59,8 @@
                 <p id="stat-kasa" class="text-2xl font-black text-green-500 mt-1">₺0</p>
             </div>
             <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
-                <p class="text-gray-400 text-[11px] font-medium">Toplam Kayıt</p>
-                <p id="stat-toplam" class="text-2xl font-black text-gray-300 mt-1">0</p>
+                <p class="text-gray-400 text-[11px] font-medium">Toplam Borç / Alacak</p>
+                <p id="stat-borc" class="text-2xl font-black text-red-400 mt-1">₺0</p>
             </div>
         </div>
 
@@ -80,7 +78,7 @@
         <div id="sec-uyeler" class="space-y-4">
             <div class="flex flex-col sm:flex-row justify-between gap-3">
                 <input type="text" id="uye-ara" oninput="filterUyeler()" placeholder="Sporcu Ara (Ad, Telefon)..." class="bg-zinc-900 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600 flex-1">
-                <button onclick="openUyeModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-950/40">
+                <button onclick="openUyeModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-950/40 transition">
                     <i class="fa-solid fa-user-plus"></i> Yeni Üye Ekle
                 </button>
             </div>
@@ -91,10 +89,10 @@
                         <thead class="bg-zinc-950 text-gray-400 font-semibold border-b border-zinc-800">
                             <tr>
                                 <th class="p-3.5">Sporcu</th>
-                                <th class="p-3.5">Telefon</th>
+                                <th class="p-3.5">İletişim</th>
                                 <th class="p-3.5">Branş / Paket</th>
                                 <th class="p-3.5">Seans Takibi</th>
-                                <th class="p-3.5">Ücret</th>
+                                <th class="p-3.5">Ücret / Kalan Borç</th>
                                 <th class="p-3.5">Bitiş Tarihi</th>
                                 <th class="p-3.5">Durum</th>
                                 <th class="p-3.5 text-right">İşlem</th>
@@ -112,7 +110,7 @@
         <div id="sec-kasa" class="space-y-4 hidden">
             <div class="flex justify-between items-center">
                 <h2 class="text-sm font-bold text-gray-300">Kasa Hareketleri (Gelir & Gider)</h2>
-                <button onclick="openKasaModal()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2">
+                <button onclick="openKasaModal()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
                     <i class="fa-solid fa-plus"></i> Gelir / Gider Ekle
                 </button>
             </div>
@@ -142,7 +140,7 @@
 
     <!-- MODAL 1: YENİ ÜYE EKLE / DÜZENLE -->
     <div id="uye-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl">
+        <div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
                 <h3 class="text-base font-bold text-red-500" id="modal-title">Yeni Sporcu Kaydı</h3>
                 <button onclick="closeUyeModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -154,25 +152,37 @@
                     <input type="text" id="m-ad" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
                 </div>
                 <div>
-                    <label class="block text-gray-400 mb-1">Telefon</label>
+                    <label class="block text-gray-400 mb-1">Telefon (WhatsApp için 05...)</label>
                     <input type="tel" id="m-tel" placeholder="05xx xxx xx xx" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+                </div>
+                <div>
+                    <label class="block text-gray-400 mb-1">Branş / Paket *</label>
+                    <select id="m-paket" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+                        <option value="MMA Group">MMA Group</option>
+                        <option value="Boks">Boks</option>
+                        <option value="Kickboks / Muay Thai">Kickboks / Muay Thai</option>
+                        <option value="BJJ / Grappling">BJJ / Grappling</option>
+                        <option value="Güreş">Güreş</option>
+                        <option value="Özel Ders (PT)">Özel Ders (PT)</option>
+                        <option value="Düet Ders (2 Kişilik)">Düet Ders (2 Kişilik)</option>
+                        <option value="Grup PT / Small Group">Grup PT / Small Group</option>
+                        <option value="Çocuklar / Gençler MMA">Çocuklar / Gençler MMA</option>
+                        <option value="Kondisyon & Functional">Kondisyon & Functional</option>
+                    </select>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-gray-400 mb-1">Branş / Paket *</label>
-                        <select id="m-paket" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
-                            <option value="MMA Group">MMA Group</option>
-                            <option value="Boks">Boks</option>
-                            <option value="Kickboks / Muay Thai">Kickboks / Muay Thai</option>
-                            <option value="BJJ / Grappling">BJJ / Grappling</option>
-                            <option value="Güreş">Güreş</option>
-                            <option value="Özel Ders (PT)">Özel Ders (PT)</option>
-                        </select>
+                        <label class="block text-gray-400 mb-1">Toplam Paket Ücreti (₺) *</label>
+                        <input type="number" id="m-ucret" required placeholder="1500" oninput="hesaplaBorc()" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
                     </div>
                     <div>
-                        <label class="block text-gray-400 mb-1">Aylık Ücret (₺) *</label>
-                        <input type="number" id="m-ucret" required placeholder="1500" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+                        <label class="block text-gray-400 mb-1">Şimdi Ödenen (₺)</label>
+                        <input type="number" id="m-odenen" value="0" placeholder="1000" oninput="hesaplaBorc()" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
                     </div>
+                </div>
+                <div class="bg-zinc-950 p-2.5 rounded-lg border border-zinc-800 flex justify-between items-center text-xs">
+                    <span class="text-gray-400">Kalan Borç:</span>
+                    <strong id="m-kalan-borc-gosterge" class="text-red-400 font-bold">₺0</strong>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
@@ -193,8 +203,8 @@
                     </select>
                 </div>
                 <div class="pt-2 flex gap-2">
-                    <button type="button" onclick="closeUyeModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-lg text-gray-300 font-bold">İptal</button>
-                    <button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 py-2.5 rounded-lg text-white font-bold">Kaydet</button>
+                    <button type="button" onclick="closeUyeModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-lg text-gray-300 font-bold transition">İptal</button>
+                    <button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 py-2.5 rounded-lg text-white font-bold transition">Kaydet</button>
                 </div>
             </form>
         </div>
@@ -228,7 +238,7 @@
         <div class="bg-zinc-900 border border-yellow-500/40 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
             <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
                 <h3 class="text-sm font-bold text-yellow-400" id="tarih-modal-baslik">Seans Tarih ve Saatini Belirle</h3>
-                <button onclick="closeTarihModal()" class="text-gray-400 hover:text-base"><i class="fa-solid fa-xmark"></i></button>
+                <button onclick="closeTarihModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="space-y-3 text-xs">
                 <div>
@@ -236,8 +246,8 @@
                     <input type="datetime-local" id="secilen-tarih-saat" class="w-full bg-black border border-zinc-800 p-3 rounded-lg text-white outline-none focus:border-yellow-500">
                 </div>
                 <div class="flex gap-2 pt-2">
-                    <button type="button" onclick="seansiKaldir()" class="bg-red-950 hover:bg-red-900 text-red-400 px-3 py-2.5 rounded-lg font-bold">Seansı İptal Et</button>
-                    <button type="button" onclick="seansiKaydetOnayla()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-bold">Kaydet & Onayla</button>
+                    <button type="button" onclick="seansiKaldir()" class="bg-red-950 hover:bg-red-900 text-red-400 px-3 py-2.5 rounded-lg font-bold transition">Seansı İptal Et</button>
+                    <button type="button" onclick="seansiKaydetOnayla()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-bold transition">Kaydet & Onayla</button>
                 </div>
             </div>
         </div>
@@ -255,12 +265,12 @@
                     <label class="block text-gray-400 mb-1">İşlem Türü *</label>
                     <select id="k-tip" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
                         <option value="Gelir">Gelir (Aidat / Ekipman Satışı vb.)</option>
-                        <option value="Gider">Gider (Kira / Ekipman / Fatura vb.)</option>
+                        <option value="Gider">Gider (Kira / Fatura / Malzeme vb.)</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-gray-400 mb-1">Açıklama / Başlık *</label>
-                    <input type="text" id="k-baslik" placeholder="Örn: Ekipman Satışı veya Salon Kirası" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
+                    <input type="text" id="k-baslik" placeholder="Örn: Salon Kirası veya Ekipman Alımı" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
@@ -269,12 +279,19 @@
                     </div>
                     <div>
                         <label class="block text-gray-400 mb-1">Kategori</label>
-                        <input type="text" id="k-kategori" placeholder="Aidat, Malzeme, Kira..." class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
+                        <select id="k-kategori" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
+                            <option value="Aidat">Aidat</option>
+                            <option value="Kira">Kira</option>
+                            <option value="Faturalar">Faturalar (Elektrik/Su/İnternet)</option>
+                            <option value="Malzeme / Ekipman">Malzeme / Ekipman</option>
+                            <option value="Eğitmen Ödemesi">Eğitmen Ödemesi</option>
+                            <option value="Diğer">Diğer</option>
+                        </select>
                     </div>
                 </div>
                 <div class="pt-2 flex gap-2">
-                    <button type="button" onclick="closeKasaModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-lg text-gray-300 font-bold">İptal</button>
-                    <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 py-2.5 rounded-lg text-white font-bold">İşlemi Kaydet</button>
+                    <button type="button" onclick="closeKasaModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-lg text-gray-300 font-bold transition">İptal</button>
+                    <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 py-2.5 rounded-lg text-white font-bold transition">İşlemi Kaydet</button>
                 </div>
             </form>
         </div>
@@ -284,6 +301,7 @@
     <script>
         let supabaseClient = null;
         let allUyeler = [];
+        let allKasa = [];
         let activeUyeForSeans = null;
         let activeSeansIndex = null;
 
@@ -324,6 +342,27 @@
             await loadKasa();
         }
 
+        // --- SEKME YÖNETİMİ ---
+        function switchTab(tab) {
+            const secUyeler = document.getElementById('sec-uyeler');
+            const secKasa = document.getElementById('sec-kasa');
+            const tabUyeler = document.getElementById('tab-uyeler');
+            const tabKasa = document.getElementById('tab-kasa');
+
+            if (tab === 'uyeler') {
+                secUyeler.classList.remove('hidden');
+                secKasa.classList.add('hidden');
+                tabUyeler.className = "flex-1 py-2.5 rounded-lg bg-red-600 text-white transition";
+                tabKasa.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
+            } else {
+                secUyeler.classList.add('hidden');
+                secKasa.classList.remove('hidden');
+                tabKasa.className = "flex-1 py-2.5 rounded-lg bg-green-600 text-white transition";
+                tabUyeler.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
+            }
+        }
+
+        // --- ÜYELER ---
         async function loadUyeler() {
             const { data: uyeler, error } = await supabaseClient.from('uyeler').select('*').order('created_at', { ascending: false });
             if (error) { console.error("Üyeler yüklenemedi:", error.message); return; }
@@ -333,6 +372,14 @@
             document.getElementById('stat-toplam').innerText = allUyeler.length;
             document.getElementById('stat-aktif').innerText = allUyeler.filter(u => u.durum === 'Aktif').length;
             document.getElementById('stat-biten').innerText = allUyeler.filter(u => u.durum === 'Bitişi Yaklaşan').length;
+
+            let toplamBorc = 0;
+            allUyeler.forEach(u => {
+                const ucret = Number(u.ucret) || 0;
+                const odenen = Number(u.odenen) || 0;
+                toplamBorc += Math.max(0, ucret - odenen);
+            });
+            document.getElementById('stat-borc').innerText = `₺${toplamBorc.toLocaleString('tr-TR')}`;
         }
 
         function renderUyeler(list) {
@@ -351,23 +398,42 @@
                 const completed = sessionDates.filter(d => d !== null && d !== undefined && d !== '').length;
                 const remaining = Math.max(0, total - completed);
 
+                const ucret = Number(u.ucret) || 0;
+                const odenen = Number(u.odenen) || 0;
+                const kalanBorc = Math.max(0, ucret - odenen);
+                const borcBadge = kalanBorc > 0 ? `<span class="text-red-400 font-bold block">Borç: ₺${kalanBorc}</span>` : `<span class="text-green-400 text-[10px] block">Ödendi</span>`;
+
+                // WhatsApp Mesaj Linki Oluşturma
+                let telClean = u.telefon ? u.telefon.replace(/\D/g, '') : '';
+                if (telClean.startsWith('0')) telClean = '9' + telClean;
+                else if (!telClean.startsWith('90') && telClean.length === 10) telClean = '90' + telClean;
+                
+                const waMesaj = encodeURIComponent(`Harder Army MMA: Merhaba ${u.ad_soyad}, ${u.paket} seans ve üyelik durumunuz hakkında bilgi vermek istedik. Salonumuza bekleriz! Osu! 🥋`);
+                const waLink = telClean ? `https://wa.me/${telClean}?text=${waMesaj}` : '#';
+
                 tbody.innerHTML += `
-                    <tr class="hover:bg-zinc-800/40">
+                    <tr class="hover:bg-zinc-800/40 transition">
                         <td class="p-3.5 font-bold text-white">${u.ad_soyad}</td>
-                        <td class="p-3.5 text-gray-400">${u.telefon || '-'}</td>
+                        <td class="p-3.5 text-gray-400">
+                            ${u.telefon || '-'}
+                            ${telClean ? `<a href="${waLink}" target="_blank" class="ml-1 text-green-500 hover:text-green-400 inline-block" title="WhatsApp Mesaj Gönder"><i class="fa-brands fa-whatsapp text-sm"></i></a>` : ''}
+                        </td>
                         <td class="p-3.5"><span class="bg-zinc-800 px-2 py-1 rounded text-[11px] text-gray-300">${u.paket}</span></td>
                         <td class="p-3.5">
                             <div class="flex items-center gap-2">
                                 <span class="text-gray-300">Yapılan: <strong class="text-red-500">${completed}</strong> / Kalan: <strong class="text-green-500">${remaining}</strong></span>
-                                <button onclick="openSeansModal('${u.id}')" class="bg-zinc-800 hover:bg-zinc-700 text-yellow-400 px-2 py-1 rounded text-[10px] font-bold border border-zinc-700"><i class="fa-solid fa-calendar-check mr-1"></i> Seanslar</button>
+                                <button onclick="openSeansModal('${u.id}')" class="bg-zinc-800 hover:bg-zinc-700 text-yellow-400 px-2 py-1 rounded text-[10px] font-bold border border-zinc-700 transition"><i class="fa-solid fa-calendar-check mr-1"></i> Seanslar</button>
                             </div>
                         </td>
-                        <td class="p-3.5 font-semibold text-green-400">₺${u.ucret}</td>
+                        <td class="p-3.5">
+                            <span class="text-gray-300 font-semibold">₺${ucret}</span>
+                            ${borcBadge}
+                        </td>
                         <td class="p-3.5 text-gray-400">${u.bitis_tarihi || '-'}</td>
                         <td class="p-3.5"><span class="px-2 py-0.5 rounded border text-[10px] font-bold ${badgeClass}">${u.durum}</span></td>
                         <td class="p-3.5 text-right space-x-1">
-                            <button onclick="editUye('${u.id}')" class="bg-zinc-800 hover:bg-zinc-700 text-gray-300 p-1.5 rounded"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteUye('${u.id}')" class="bg-red-950 hover:bg-red-900 text-red-400 p-1.5 rounded"><i class="fa-solid fa-trash"></i></button>
+                            <button onclick="editUye('${u.id}')" class="bg-zinc-800 hover:bg-zinc-700 text-gray-300 p-1.5 rounded transition"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteUye('${u.id}')" class="bg-red-950 hover:bg-red-900 text-red-400 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>
                 `;
@@ -380,20 +446,70 @@
             renderUyeler(filtered);
         }
 
+        function hesaplaBorc() {
+            const toplam = Number(document.getElementById('m-ucret').value) || 0;
+            const odenen = Number(document.getElementById('m-odenen').value) || 0;
+            const kalan = Math.max(0, toplam - odenen);
+            const gosterge = document.getElementById('m-kalan-borc-gosterge');
+            gosterge.innerText = `₺${kalan}`;
+            gosterge.className = kalan > 0 ? "text-red-400 font-bold" : "text-green-400 font-bold";
+        }
+
+        function openUyeModal() {
+            document.getElementById('uye-id').value = '';
+            document.getElementById('modal-title').innerText = 'Yeni Sporcu Kaydı';
+            document.getElementById('uye-form').reset();
+            document.getElementById('m-toplam-ders').value = 12;
+            document.getElementById('m-odenen').value = 0;
+            hesaplaBorc();
+            document.getElementById('uye-modal').classList.remove('hidden');
+        }
+
+        function closeUyeModal() {
+            document.getElementById('uye-modal').classList.add('hidden');
+        }
+
+        function editUye(id) {
+            const u = allUyeler.find(item => item.id == id);
+            if (!u) return;
+
+            document.getElementById('uye-id').value = u.id;
+            document.getElementById('modal-title').innerText = 'Sporcu Bilgilerini Düzenle';
+            document.getElementById('m-ad').value = u.ad_soyad || '';
+            document.getElementById('m-tel').value = u.telefon || '';
+            document.getElementById('m-paket').value = u.paket || 'MMA Group';
+            document.getElementById('m-ucret').value = u.ucret || 0;
+            document.getElementById('m-odenen').value = u.odenen || 0;
+            document.getElementById('m-toplam-ders').value = u.total_lessons || 12;
+            document.getElementById('m-bitis').value = u.bitis_tarihi || '';
+            document.getElementById('m-durum').value = u.durum || 'Aktif';
+            hesaplaBorc();
+
+            document.getElementById('uye-modal').classList.remove('hidden');
+        }
+
+        async function deleteUye(id) {
+            if(!confirm('Bu sporcuyu silmek istediğinize emin misiniz?')) return;
+            const { error } = await supabaseClient.from('uyeler').delete().eq('id', id);
+            if (error) { alert('Silme hatası: ' + error.message); return; }
+            loadData();
+        }
+
         async function saveUye(e) {
             e.preventDefault();
             const id = document.getElementById('uye-id').value;
             const adSoyad = document.getElementById('m-ad').value;
             const paket = document.getElementById('m-paket').value;
-            const ucret = Number(document.getElementById('m-ucret').value);
+            const ucret = Number(document.getElementById('m-ucret').value) || 0;
+            const odenen = Number(document.getElementById('m-odenen').value) || 0;
 
             const payload = {
                 ad_soyad: adSoyad,
                 telefon: document.getElementById('m-tel').value,
                 paket: paket,
                 ucret: ucret,
+                odenen: odenen,
                 total_lessons: Number(document.getElementById('m-toplam-ders').value) || 12,
-                baslangic_tarihi: new Date().toISOString().split('T')[0],
                 bitis_tarihi: document.getElementById('m-bitis').value,
                 durum: document.getElementById('m-durum').value
             };
@@ -402,14 +518,16 @@
             if (id) {
                 response = await supabaseClient.from('uyeler').update(payload).eq('id', id);
             } else {
+                payload.baslangic_tarihi = new Date().toISOString().split('T')[0];
                 response = await supabaseClient.from('uyeler').insert([payload]);
 
-                if (!response.error) {
+                // Yeni üye eklenince kasaya sadece "ödenen" kadar gelir kaydı düşer
+                if (!response.error && odenen > 0) {
                     const bugunTarih = new Date().toISOString().split('T')[0];
                     await supabaseClient.from('kasa_hareketleri').insert([{
                         tip: 'Gelir',
-                        baslik: `${adSoyad} - ${paket} Aidatı`,
-                        tutar: ucret,
+                        baslik: `${adSoyad} - ${paket} Ödemesi`,
+                        tutar: odenen,
                         kategori: 'Aidat',
                         tarih: bugunTarih
                     }]);
@@ -422,6 +540,85 @@
             }
 
             closeUyeModal();
+            loadData();
+        }
+
+        // --- KASA ---
+        async function loadKasa() {
+            const { data: kasa, error } = await supabaseClient.from('kasa_hareketleri').select('*').order('created_at', { ascending: false });
+            if (error) { console.error("Kasa hareketleri yüklenemedi:", error.message); return; }
+            allKasa = kasa || [];
+            renderKasa(allKasa);
+
+            let totalGelir = 0;
+            let totalGider = 0;
+            allKasa.forEach(k => {
+                const tutar = Number(k.tutar) || 0;
+                if (k.tip === 'Gelir') totalGelir += tutar;
+                else totalGider += tutar;
+            });
+            const bakiye = totalGelir - totalGider;
+            document.getElementById('stat-kasa').innerText = `₺${bakiye.toLocaleString('tr-TR')}`;
+        }
+
+        function renderKasa(list) {
+            const tbody = document.getElementById('kasa-listesi');
+            tbody.innerHTML = '';
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">Kasa hareketi bulunamadı.</td></tr>`;
+                return;
+            }
+            list.forEach(k => {
+                const isGelir = k.tip === 'Gelir';
+                const badge = isGelir ? '<span class="bg-green-950 text-green-400 border border-green-800 px-2 py-0.5 rounded text-[10px] font-bold">Gelir</span>' : '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold">Gider</span>';
+                const tutarClass = isGelir ? 'text-green-400' : 'text-red-400';
+                const tutarSign = isGelir ? '+' : '-';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-zinc-800/40 transition">
+                        <td class="p-3.5 text-gray-400">${k.tarih || '-'}</td>
+                        <td class="p-3.5">${badge}</td>
+                        <td class="p-3.5 font-bold text-white">${k.baslik}</td>
+                        <td class="p-3.5 text-gray-400">${k.kategori || '-'}</td>
+                        <td class="p-3.5 text-right font-semibold ${tutarClass}">${tutarSign}₺${Number(k.tutar).toLocaleString('tr-TR')}</td>
+                        <td class="p-3.5 text-right">
+                            <button onclick="deleteKasa('${k.id}')" class="bg-red-950 hover:bg-red-900 text-red-400 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function openKasaModal() {
+            document.getElementById('kasa-form').reset();
+            document.getElementById('kasa-modal').classList.remove('hidden');
+        }
+
+        function closeKasaModal() {
+            document.getElementById('kasa-modal').classList.add('hidden');
+        }
+
+        async function saveKasa(e) {
+            e.preventDefault();
+            const payload = {
+                tip: document.getElementById('k-tip').value,
+                baslik: document.getElementById('k-baslik').value,
+                tutar: Number(document.getElementById('k-tutar').value),
+                kategori: document.getElementById('k-kategori').value,
+                tarih: new Date().toISOString().split('T')[0]
+            };
+
+            const { error } = await supabaseClient.from('kasa_hareketleri').insert([payload]);
+            if (error) { alert('Hata: ' + error.message); return; }
+
+            closeKasaModal();
+            loadData();
+        }
+
+        async function deleteKasa(id) {
+            if(!confirm('Bu kasa hareketini silmek istediğinize emin misiniz?')) return;
+            const { error } = await supabaseClient.from('kasa_hareketleri').delete().eq('id', id);
+            if (error) { alert('Silme hatası: ' + error.message); return; }
             loadData();
         }
 
@@ -542,131 +739,6 @@
         function closeTarihModal() {
             document.getElementById('seans-tarih-modal').classList.add('hidden');
             activeSeansIndex = null;
-        }
-
-        function editUye(id) {
-            const u = allUyeler.find(item => item.id == id);
-            if (!u) return;
-            document.getElementById('uye-id').value = u.id;
-            document.getElementById('m-ad').value = u.ad_soyad;
-            document.getElementById('m-tel').value = u.telefon || '';
-            document.getElementById('m-paket').value = u.paket;
-            document.getElementById('m-ucret').value = u.ucret;
-            document.getElementById('m-toplam-ders').value = u.total_lessons || 12;
-            document.getElementById('m-bitis').value = u.bitis_tarihi || '';
-            document.getElementById('m-durum').value = u.durum;
-            document.getElementById('modal-title').innerText = 'Sporcu Bilgilerini Düzenle';
-            document.getElementById('uye-modal').classList.remove('hidden');
-        }
-
-        async function deleteUye(id) {
-            if (!confirm('Bu sporcuyu silmek istediğinizden emin misiniz?')) return;
-            const { error } = await supabaseClient.from('uyeler').delete().eq('id', id);
-            if (error) { alert('Silme hatası: ' + error.message); return; }
-            loadData();
-        }
-
-        function openUyeModal() {
-            document.getElementById('uye-form').reset();
-            document.getElementById('uye-id').value = '';
-            document.getElementById('modal-title').innerText = 'Yeni Sporcu Kaydı';
-            
-            const d = new Date();
-            d.setMonth(d.getMonth() + 1);
-            document.getElementById('m-bitis').value = d.toISOString().split('T')[0];
-            
-            document.getElementById('uye-modal').classList.remove('hidden');
-        }
-
-        function closeUyeModal() { document.getElementById('uye-modal').classList.add('hidden'); }
-
-        // --- KASA / GELİR-GİDER İŞLEMLERİ ---
-        async function loadKasa() {
-            const { data: kasa, error } = await supabaseClient.from('kasa_hareketleri').select('*').order('tarih', { ascending: false });
-            if (error) { console.error("Kasa hareketleri yüklenemedi:", error.message); return; }
-            
-            const list = kasa || [];
-            const tbody = document.getElementById('kasa-listesi');
-            tbody.innerHTML = '';
-
-            let toplamBakiye = 0;
-
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">Kasa hareketi bulunamadı.</td></tr>`;
-            } else {
-                list.forEach(k => {
-                    const isGelir = k.tip === 'Gelir';
-                    if (isGelir) {
-                        toplamBakiye += Number(k.tutar || 0);
-                    } else {
-                        toplamBakiye -= Number(k.tutar || 0);
-                    }
-
-                    tbody.innerHTML += `
-                        <tr class="hover:bg-zinc-800/40">
-                            <td class="p-3.5 text-gray-400">${k.tarih || '-'}</td>
-                            <td class="p-3.5"><span class="px-2 py-0.5 rounded border text-[10px] font-bold ${isGelir ? 'bg-green-950 text-green-400 border-green-800' : 'bg-red-950 text-red-400 border-red-800'}">${k.tip}</span></td>
-                            <td class="p-3.5 font-bold text-white">${k.baslik}</td>
-                            <td class="p-3.5 text-gray-400">${k.kategori || '-'}</td>
-                            <td class="p-3.5 text-right font-bold ${isGelir ? 'text-green-400' : 'text-red-400'}">${isGelir ? '+' : '-'}₺${k.tutar}</td>
-                            <td class="p-3.5 text-right">
-                                <button onclick="deleteKasa('${k.id}')" class="bg-red-950 hover:bg-red-900 text-red-400 p-1.5 rounded"><i class="fa-solid fa-trash"></i></button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
-
-            document.getElementById('stat-kasa').innerText = `₺${toplamBakiye}`;
-        }
-
-        function openKasaModal() {
-            document.getElementById('kasa-form').reset();
-            document.getElementById('kasa-modal').classList.remove('hidden');
-        }
-
-        function closeKasaModal() { document.getElementById('kasa-modal').classList.add('hidden'); }
-
-        async function saveKasa(e) {
-            e.preventDefault();
-            const tip = document.getElementById('k-tip').value;
-            const baslik = document.getElementById('k-baslik').value;
-            const tutar = Number(document.getElementById('k-tutar').value);
-            const kategori = document.getElementById('k-kategori').value;
-            const tarih = new Date().toISOString().split('T')[0];
-
-            const { error } = await supabaseClient.from('kasa_hareketleri').insert([{ tip, baslik, tutar, kategori, tarih }]);
-            if (error) { alert('Hata: ' + error.message); return; }
-
-            closeKasaModal();
-            loadKasa();
-        }
-
-        async function deleteKasa(id) {
-            if (!confirm('Bu kasa hareketini silmek istediğinizden emin misiniz?')) return;
-            const { error } = await supabaseClient.from('kasa_hareketleri').delete().eq('id', id);
-            if (error) { alert('Silme hatası: ' + error.message); return; }
-            loadKasa();
-        }
-
-        // --- SEKME DEĞİŞTİRME ---
-        function switchTab(tab) {
-            const btnUyeler = document.getElementById('tab-uyeler');
-            const btnKasa = document.getElementById('tab-kasa');
-            const secUyeler = document.getElementById('sec-uyeler');
-            const secKasa = document.getElementById('sec-kasa');
-
-            if (tab === 'uyeler') {
-                btnUyeler.className = "flex-1 py-2.5 rounded-lg bg-red-600 text-white transition";
-                btnKasa.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
-                secUyeler.classList.remove('hidden');
-                secKasa.classList.add('hidden');
-            } else {
-                btnKasa.className = "flex-1 py-2.5 rounded-lg bg-green-600 text-white transition";
-                btnUyeler.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
-                secKasa.classList.remove('hidden');
-                secUyeler.classList.add('hidden');
-            }
         }
     </script>
 </body>
