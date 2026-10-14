@@ -6,6 +6,8 @@
     <title>Harder Army MMA - Yönetim ve Öğrenci Paneli</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- QR Kod Oluşturma Kütüphanesi -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-black text-gray-100 font-sans min-h-screen pb-20">
@@ -85,9 +87,14 @@
             <div id="sec-uyeler" class="space-y-4">
                 <div class="flex flex-col sm:flex-row justify-between gap-3">
                     <input type="text" id="uye-ara" oninput="filterUyeler()" placeholder="Sporcu Ara (Ad, Telefon)..." class="bg-zinc-900 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600 flex-1">
-                    <button onclick="openUyeModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-950/40 transition">
-                        <i class="fa-solid fa-user-plus"></i> Yeni Üye Ekle
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="openQrModal()" class="bg-zinc-800 hover:bg-zinc-700 text-yellow-400 text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2 border border-zinc-700 transition">
+                            <i class="fa-solid fa-qrcode"></i> Salon QR Kodu
+                        </button>
+                        <button onclick="openUyeModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-950/40 transition">
+                            <i class="fa-solid fa-user-plus"></i> Yeni Üye Ekle
+                        </button>
+                    </div>
                 </div>
 
                 <div class="bg-zinc-900 rounded-xl border border-zinc-800/80 overflow-hidden">
@@ -144,12 +151,12 @@
             </div>
         </div>
 
-        <!-- ANA GÖRÜNÜM 2: ÖĞRENCİ GİRİŞ & TAKİP EKRANI -->
+        <!-- ANA GÖRÜNÜM 2: ÖĞRENCİ GİRİŞ & CHECK-IN EKRANI -->
         <div id="view-ogrenci" class="space-y-6 hidden">
             <div class="bg-zinc-900 border border-red-900/50 rounded-2xl p-6 max-w-md mx-auto shadow-2xl space-y-4">
                 <div class="text-center space-y-1">
-                    <h2 class="text-lg font-black text-red-500">ÖĞRENCİ SEANS & ÜYELİK TAKİBİ</h2>
-                    <p class="text-xs text-gray-400">Kayıtlı telefon numaranızı girerek bilgilerinize ulaşabilirsiniz.</p>
+                    <h2 class="text-lg font-black text-red-500">SALON GİRİŞİ & CHECK-IN</h2>
+                    <p class="text-xs text-gray-400">Telefon numaranızı girerek salona giriş yoklamanızı yapabilir ve seanslarınızı takip edebilirsiniz.</p>
                 </div>
                 <div class="space-y-3">
                     <div>
@@ -157,7 +164,7 @@
                         <input type="tel" id="ogrenci-telefon-input" placeholder="05xxxxxxxx" class="w-full bg-black border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600">
                     </div>
                     <button onclick="ogrenciGirisYap()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-red-950/50">
-                        Bilgilerimi Görüntüle
+                        Giriş Yap & Seanslarımı Gör
                     </button>
                     <div class="text-center pt-2">
                         <button onclick="openSozlesmeModal()" class="text-[11px] text-gray-400 hover:text-red-400 underline transition">
@@ -180,9 +187,15 @@
                         <h3 id="og-ad-soyad" class="text-lg font-black text-white mt-1.5">Sporcu Adı</h3>
                         <p class="text-xs text-gray-400 mt-0.5">Bitiş Tarihi: <strong id="og-bitis" class="text-yellow-400">-</strong></p>
                     </div>
-                    <div class="bg-black/60 border border-zinc-800 p-3 rounded-xl text-center min-w-[140px]">
-                        <p class="text-[10px] text-gray-400">Kalan / Toplam Seans</p>
-                        <p class="text-sm font-black text-green-400 mt-0.5"><span id="og-kalan">0</span> / <span id="og-toplam">12</span></p>
+                    <div class="flex items-center gap-3">
+                        <div class="bg-black/60 border border-zinc-800 p-3 rounded-xl text-center min-w-[120px]">
+                            <p class="text-[10px] text-gray-400">Kalan / Toplam</p>
+                            <p class="text-sm font-black text-green-400 mt-0.5"><span id="og-kalan">0</span> / <span id="og-toplam">12</span></p>
+                        </div>
+                        <button onclick="ogrenciCheckInYap()" class="bg-green-600 hover:bg-green-700 text-white font-bold p-3.5 rounded-xl text-xs flex flex-col items-center justify-center gap-1 shadow-lg transition">
+                            <i class="fa-solid fa-qrcode text-base"></i>
+                            <span>Check-In Yap</span>
+                        </button>
                     </div>
                 </div>
 
@@ -195,6 +208,21 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- MODAL: QR KOD DUVAR PENCERESİ -->
+    <div id="qr-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-2xl p-6 text-center space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                <h3 class="text-sm font-bold text-yellow-400"><i class="fa-solid fa-qrcode mr-1"></i> Salon Giriş QR Kodu</h3>
+                <button onclick="closeQrModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <p class="text-xs text-gray-400">Öğrenciler bu QR kodu telefon kamerasıyla okutarak doğrudan giriş ekranına ulaşabilirler.</p>
+            <div class="bg-white p-4 rounded-xl inline-block shadow-inner mx-auto" id="qrcode-container"></div>
+            <div class="pt-2">
+                <button onclick="closeQrModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 py-2.5 rounded-xl text-xs font-bold transition">Kapat</button>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL 1: YENİ ÜYE EKLE / DÜZENLE -->
@@ -355,15 +383,9 @@
             </div>
             <div class="overflow-y-auto pr-2 space-y-3 text-xs text-gray-300 leading-relaxed">
                 <p><strong>1. TARAFLAR VE AMAÇ:</strong> İşbu sözleşme, Harder Army MMA (Bahçeşehir MMA) salonu ile salon hizmetlerinden faydalanan sporcu/üye arasında, dövüş sanatları ve kondisyon antrenmanları kurallarını belirlemek amacıyla düzenlenmiştir.</p>
-                
-                <p><strong>2. SAĞLIK VE RİSK BEYANI:</strong> Üye, MMA, Boks, Kickboks ve Grappling gibi temaslı dövüş sanatlarının doğası gereği sakatlanma riskleri barındırdığını kabul eder. Üyenin antrenmanlara katılmasına mani kronik bir rahatsızlığı, kalp veya ortopedik engeli bulunmadığı varsayılır. Sağlık durumundaki değişiklikleri eğitmene bildirmek üyenin sorumluluğundadır.</p>
-                
-                <p><strong>3. PAKET VE SEANS KURALLARI:</strong> Satın alınan seans paketleri ve üyelikler belirlenen süre (genellikle 1 ay / 30 gün) içinde kullanılmalıdır. Kullanılmayan veya hakkı düşen seanslar bir sonraki aya devretmez, iade veya nakit değişimi yapılamaz.</p>
-                
-                <p><strong>4. SALON DİSİPLİNİ VE EKİPMAN:</strong> Antrenmanlarda ağızlık (dişlik), bandaj, eldiven ve kaval koruma gibi zorunlu kişisel koruyucu ekipmanların kullanımı mecburidir. Salon içerisinde diğer üyeleri rahatsız edici, disipline aykırı veya sportmenlik dışı davranışlarda bulunan kişilerin üyeliği, ücret iadesi yapılmaksızın sonlandırılabilir.</p>
-                
-                <p><strong>5. GİZLİLİK VE KİŞİSEL VERİLER:</strong> Üyeye ait telefon ve iletişim bilgileri yalnızca salon içi duyurular, seans takibi ve bilgilendirme amacıyla saklanır, üçüncü şahıslarla paylaşılmaz.</p>
-                
+                <p><strong>2. SAĞLIK VE RİSK BEYANI:</strong> Üye, MMA, Boks, Kickboks ve Grappling gibi temaslı dövüş sanatlarının doğası gereği sakatlanma riskleri barındırdığını kabul eder. Üyenin antrenmanlara katılmasına mani kronik bir rahatsızlığı, kalp veya ortopedik engeli bulunmadığı varsayılır.</p>
+                <p><strong>3. PAKET VE SEANS KURALLARI:</strong> Satın alınan seans paketleri ve üyelikler belirlenen süre içinde kullanılmalıdır. Kullanılmayan veya hakkı düşen seanslar bir sonraki aya devretmez, iade veya nakit değişimi yapılamaz.</p>
+                <p><strong>4. SALON DİSİPLİNİ VE EKİPMAN:</strong> Antrenmanlarda dişlik, bandaj, eldiven ve kaval koruma gibi zorunlu kişisel koruyucu ekipmanların kullanımı mecburidir.</p>
                 <p class="text-center font-bold text-red-400 pt-2">Osu! Harder Army MMA ailesine hoş geldiniz.</p>
             </div>
             <div class="pt-2 border-t border-zinc-800">
@@ -379,6 +401,7 @@
         let allKasa = [];
         let activeUyeForSeans = null;
         let activeSeansIndex = null;
+        let currentLoggedInUye = null;
 
         window.onload = function() {
             const savedUrl = localStorage.getItem('sb_url');
@@ -389,6 +412,12 @@
                 initSupabase(savedUrl, savedKey);
             } else {
                 document.getElementById('setup-box').classList.remove('hidden');
+            }
+
+            // URL içinde QR otomatik giriş parametresi var mı kontrol et (Örn: ?view=ogrenci)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('view') === 'ogrenci') {
+                switchMainView('ogrenci');
             }
         };
 
@@ -455,12 +484,30 @@
             }
         }
 
-        // --- ÖĞRENCİ GİRİŞ VE TAKİP MANTIĞI ---
+        // --- QR KOD YÖNETİCİ PENCERESİ ---
+        function openQrModal() {
+            document.getElementById('qr-modal').classList.remove('hidden');
+            const container = document.getElementById('qrcode-container');
+            container.innerHTML = '';
+            
+            // Mevcut sayfa adresinin öğrenci görünümü linkini QR yap
+            const currentUrl = window.location.href.split('?')[0] + '?view=ogrenci';
+            new QRCode(container, {
+                text: currentUrl,
+                width: 180,
+                height: 180,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+        function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); }
+
+        // --- ÖĞRENCİ GİRİŞ VE CHECK-IN MANTIĞI ---
         function ogrenciGirisYap() {
             let tel = document.getElementById('ogrenci-telefon-input').value.trim();
             if (!tel) { alert('Lütfen telefon numaranızı girin!'); return; }
 
-            // Telefon numarası temizliği eşleşme için
             const temizTel = tel.replace(/\D/g, '');
             const ogrenci = allUyeler.find(u => u.telefon && u.telefon.replace(/\D/g, '').includes(temizTel));
 
@@ -469,14 +516,23 @@
                 return;
             }
 
-            // Bilgileri ekrana bas
-            document.getElementById('og-ad-soyad').innerText = ogrenci.ad_soyad;
-            document.getElementById('og-brans-badge').innerText = ogrenci.paket;
-            document.getElementById('og-bitis').innerText = ogrenci.bitis_tarihi || '-';
+            currentLoggedInUye = ogrenci;
+            renderOgrenciPaneli();
+            document.getElementById('ogrenci-detay-alani').classList.remove('hidden');
+        }
 
-            const total = ogrenci.total_lessons || 12;
+        function renderOgrenciPaneli() {
+            if (!currentLoggedInUye) return;
+            // Güncel veriyi allUyeler'den tekrar al
+            currentLoggedInUye = allUyeler.find(u => u.id === currentLoggedInUye.id) || currentLoggedInUye;
+
+            document.getElementById('og-ad-soyad').innerText = currentLoggedInUye.ad_soyad;
+            document.getElementById('og-brans-badge').innerText = currentLoggedInUye.paket;
+            document.getElementById('og-bitis').innerText = currentLoggedInUye.bitis_tarihi || '-';
+
+            const total = currentLoggedInUye.total_lessons || 12;
             let sessionDates = [];
-            try { sessionDates = typeof ogrenci.session_dates === 'string' ? JSON.parse(ogrenci.session_dates) : (ogrenci.session_dates || []); } catch(e) { sessionDates = []; }
+            try { sessionDates = typeof currentLoggedInUye.session_dates === 'string' ? JSON.parse(currentLoggedInUye.session_dates) : (currentLoggedInUye.session_dates || []); } catch(e) { sessionDates = []; }
             const completed = sessionDates.filter(d => d !== null && d !== undefined && d !== '').length;
             const remaining = Math.max(0, total - completed);
 
@@ -504,8 +560,50 @@
                     </div>
                 `;
             }
+        }
 
-            document.getElementById('ogrenci-detay-alani').classList.remove('hidden');
+        async function ogrenciCheckInYap() {
+            if (!currentLoggedInUye) return;
+
+            let sessionDates = [];
+            try { sessionDates = typeof currentLoggedInUye.session_dates === 'string' ? JSON.parse(currentLoggedInUye.session_dates) : (currentLoggedInUye.session_dates || []); } catch(e) { sessionDates = []; }
+            
+            const total = currentLoggedInUye.total_lessons || 12;
+            
+            // Boş olan ilk seans indexini bul
+            let bosIndex = -1;
+            for (let i = 0; i < total; i++) {
+                if (!sessionDates[i]) {
+                    bosIndex = i;
+                    break;
+                }
+            }
+
+            if (bosIndex === -1) {
+                alert('Tebrikler! Bu paketteki tüm seanslarınızı tamamladınız. Lütfen yeni paket yükletin.');
+                return;
+            }
+
+            // Bugünün tarih ve saatini formatla
+            const now = new Date();
+            const formatted = `${now.getDate()} ${now.toLocaleString('tr-TR', { month: 'short' })} ${now.getFullYear()} - ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} (QR)`;
+
+            sessionDates[bosIndex] = formatted;
+
+            const { error } = await supabaseClient
+                .from('uyeler')
+                .update({ session_dates: JSON.stringify(sessionDates) })
+                .eq('id', currentLoggedInUye.id);
+
+            if (error) {
+                alert('Check-In yapılırken hata oluştu: ' + error.message);
+                return;
+            }
+
+            currentLoggedInUye.session_dates = sessionDates;
+            alert(`Harika! ${bosIndex + 1}. seansınız başarıyla onaylandı (Check-In Tamam). Osu! 🥋`);
+            await loadUyeler();
+            renderOgrenciPaneli();
         }
 
         function openSozlesmeModal() { document.getElementById('sozlesme-modal').classList.remove('hidden'); }
