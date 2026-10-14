@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harder Army MMA - Yönetim Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-black text-white font-sans min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="flex justify-between items-center border-b border-red-900/50 pb-4 mb-6">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-extrabold tracking-wider text-red-600">HARDER ARMY MMA</h1>
+                <p class="text-xs text-gray-400">YÖNETİM MERKEZİ</p>
+            </div>
+            <span class="bg-red-950 text-red-400 text-xs px-3 py-1 rounded-full border border-red-800">Canlı Sistem</span>
+        </header>
+
+        <!-- Supabase Bağlantı Ayar Alanı -->
+        <div id="setup-box" class="bg-zinc-900 border border-red-900/40 p-4 rounded-lg mb-6">
+            <h3 class="text-sm font-bold text-red-500 mb-2">Supabase Bağlantı Bilgileri</h3>
+            <p class="text-xs text-gray-400 mb-3">Supabase'den aldığın URL ve Anon Key bilgilerini bir kez gir, paneli hemen aktifleştir.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <input type="text" id="sb-url" placeholder="Supabase Project URL" class="bg-black border border-zinc-800 p-2 rounded text-sm text-white">
+                <input type="text" id="sb-key" placeholder="Supabase Anon Key" class="bg-black border border-zinc-800 p-2 rounded text-sm text-white">
+            </div>
+            <button onclick="saveConfig()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-4 py-2 rounded font-bold">Bağlan ve Başla</button>
+        </div>
+
+        <!-- İstatistik Kartları -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-zinc-900 border-l-4 border-red-600 p-4 rounded-r-lg">
+                <p class="text-gray-400 text-xs">Aktif Üyeler</p>
+                <p id="stat-aktif" class="text-2xl font-bold mt-1">0</p>
+            </div>
+            <div class="bg-zinc-900 border-l-4 border-red-600 p-4 rounded-r-lg">
+                <p class="text-gray-400 text-xs">Toplam Tahsilat</p>
+                <p id="stat-tahsilat" class="text-2xl font-bold mt-1 text-green-500">₺0</p>
+            </div>
+            <div class="bg-zinc-900 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+                <p class="text-gray-400 text-xs">Bitişi Yaklaşan</p>
+                <p id="stat-biten" class="text-2xl font-bold mt-1 text-yellow-500">0</p>
+            </div>
+            <div class="bg-zinc-900 border-l-4 border-red-600 p-4 rounded-r-lg">
+                <p class="text-gray-400 text-xs">Toplam Üye</p>
+                <p id="stat-toplam" class="text-2xl font-bold mt-1">0</p>
+            </div>
+        </div>
+
+        <!-- Üye Listesi Tablosu -->
+        <div class="bg-zinc-900 rounded-lg border border-zinc-800 p-4">
+            <h2 class="text-lg font-bold mb-4 text-red-500">Kayıtlı Üyeler</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-gray-300">
+                    <thead class="bg-zinc-950 text-gray-400 border-b border-zinc-800">
+                        <tr>
+                            <th class="p-3">Ad Soyad</th>
+                            <th class="p-3">Telefon</th>
+                            <th class="p-3">Paket</th>
+                            <th class="p-3">Ücret</th>
+                            <th class="p-3">Bitiş Tarihi</th>
+                            <th class="p-3">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody id="uye-listesi">
+                        <tr><td colspan="6" class="p-4 text-center text-gray-500">Veriler yükleniyor...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let supabaseClient = null;
+
+        window.onload = function() {
+            const savedUrl = localStorage.getItem('sb_url');
+            const savedKey = localStorage.getItem('sb_key');
+            if (savedUrl && savedKey) {
+                document.getElementById('sb-url').value = savedUrl;
+                document.getElementById('sb-key').value = savedKey;
+                initSupabase(savedUrl, savedKey);
+            }
+        };
+
+        function saveConfig() {
+            const url = document.getElementById('sb-url').value.trim();
+            const key = document.getElementById('sb-key').value.trim();
+            if(!url || !key) {
+                alert('Lütfen eksik alanları doldurun!');
+                return;
+            }
+            localStorage.setItem('sb_url', url);
+            localStorage.setItem('sb_key', key);
+            initSupabase(url, key);
+        }
+
+        async function initSupabase(url, key) {
+            try {
+                supabaseClient = window.supabase.createClient(url, key);
+                document.getElementById('setup-box').classList.add('hidden');
+                loadData();
+            } catch (e) {
+                alert('Bağlantı hatası: ' + e.message);
+            }
+        }
+
+        async function loadData() {
+            if (!supabaseClient) return;
+            
+            // Üyeleri Çek
+            const { data: uyeler, error } = await supabaseClient.from('uyeler').select('*');
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            document.getElementById('stat-toplam').innerText = uyeler.length;
+            const aktif = uyeler.filter(u => u.durum === 'Aktif').length;
+            const biten = uyeler.filter(u => u.durum === 'Bitişi Yaklaşan').length;
+            document.getElementById('stat-aktif').innerText = aktif;
+            document.getElementById('stat-biten').innerText = biten;
+
+            const tbody = document.getElementById('uye-listesi');
+            tbody.innerHTML = '';
+
+            if(uyeler.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Henüz kayıtlı üye bulunmuyor. Supabase tablonuz boş.</td></tr>`;
+                return;
+            }
+
+            uyeler.forEach(u => {
+                tbody.innerHTML += `
+                    <tr class="border-b border-zinc-800 hover:bg-zinc-800/50">
+                        <td class="p-3 font-medium text-white">${u.ad_soyad}</td>
+                        <td class="p-3">${u.telefon || '-'}</td>
+                        <td class="p-3">${u.paket}</td>
+                        <td class="p-3">₺${u.ucret}</td>
+                        <td class="p-3">${u.bitis_tarihi}</td>
+                        <td class="p-3">
+                            <span class="px-2 py-1 rounded text-xs ${u.durum === 'Aktif' ? 'bg-green-950 text-green-400' : 'bg-yellow-950 text-yellow-400'}">
+                                ${u.durum}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
