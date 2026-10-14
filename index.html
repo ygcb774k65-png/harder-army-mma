@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Harder Army MMA - Yönetim Paneli</title>
+    <!-- Tarayıcı Sekmesi İkonu -->
+    <link rel="icon" type="image/jpeg" href="logo.jpg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,10 +16,13 @@
     <header class="bg-zinc-950 border-b border-red-900/40 p-4 sticky top-0 z-50 shadow-lg">
         <div class="max-w-5xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="bg-red-600 text-black font-black p-2 rounded-lg text-lg tracking-tighter">HA</div>
+                <!-- Sol Üst Logo Alanı -->
+                <div class="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-zinc-950 border border-red-900/50 shadow-md">
+                    <img src="logo.jpg" class="w-full h-full object-cover" alt="Harder Army Logo">
+                </div>
                 <div>
                     <h1 class="text-xl font-extrabold tracking-wider text-red-600 leading-none">HARDER ARMY MMA</h1>
-                    <p class="text-[10px] text-gray-400 font-medium tracking-widest mt-0.5">BAHÇEŞEHİR FIGHT CLUB</p>
+                    <p class="text-[10px] text-gray-400 font-medium tracking-widest mt-0.5">BAHÇEŞEHİR MMA</p>
                 </div>
             </div>
             <button onclick="toggleSetup()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-gray-400 px-3 py-1.5 rounded-lg border border-zinc-800">
@@ -122,10 +127,11 @@
                                 <th class="p-3.5">Açıklama</th>
                                 <th class="p-3.5">Kategori</th>
                                 <th class="p-3.5 text-right">Tutar</th>
+                                <th class="p-3.5 text-right">İşlem</th>
                             </tr>
                         </thead>
                         <tbody id="kasa-listesi" class="divide-y divide-zinc-800/50">
-                            <tr><td colspan="5" class="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
+                            <tr><td colspan="6" class="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -398,7 +404,6 @@
             } else {
                 response = await supabaseClient.from('uyeler').insert([payload]);
 
-                // KASA HAREKETLERİ TABLOSUNA OTOMATİK GELİR EKLEME (DOĞRU SÜTUNLAR İLE)
                 if (!response.error) {
                     const bugunTarih = new Date().toISOString().split('T')[0];
                     await supabaseClient.from('kasa_hareketleri').insert([{
@@ -480,7 +485,7 @@
         async function seansiKaydetOnayla() {
             if (activeUyeForSeans === null || activeSeansIndex === null) return;
             const val = document.getElementById('secilen-tarih-saat').value;
-            if(!val) { alert('Lütfen tarih ve saat seçin!'); return; }
+            if(!val) { alert('Lütfen tarih and saat seçin!'); return; }
 
             const d = new Date(val);
             const formatted = `${d.getDate()} ${d.toLocaleString('tr-TR', { month: 'short' })} ${d.getFullYear()} - ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -548,81 +553,121 @@
             document.getElementById('m-paket').value = u.paket;
             document.getElementById('m-ucret').value = u.ucret;
             document.getElementById('m-toplam-ders').value = u.total_lessons || 12;
-            document.getElementById('m-bitis').value = u.bitis_tarihi;
+            document.getElementById('m-bitis').value = u.bitis_tarihi || '';
             document.getElementById('m-durum').value = u.durum;
-            document.getElementById('modal-title').innerText = "Üye Bilgilerini Düzenle";
+            document.getElementById('modal-title').innerText = 'Sporcu Bilgilerini Düzenle';
             document.getElementById('uye-modal').classList.remove('hidden');
         }
 
         async function deleteUye(id) {
-            if (confirm('Bu üyeyi silmek istediğinize emin misiniz?')) {
-                const { error } = await supabaseClient.from('uyeler').delete().eq('id', id);
-                if (error) { alert('Silme hatası: ' + error.message); return; }
-                loadUyeler();
-            }
-        }
-
-        async function loadKasa() {
-            const { data: kasa, error } = await supabaseClient.from('kasa_hareketleri').select('*').order('created_at', { ascending: false });
-            if (error) { console.error("Kasa yüklenemedi:", error.message); return; }
-            const tbody = document.getElementById('kasa-listesi');
-            tbody.innerHTML = '';
-
-            let toplamKasa = 0;
-            (kasa || []).forEach(k => {
-                const tutarVal = Number(k.tutar) || 0;
-                if(k.tip === 'Gelir') toplamKasa += tutarVal;
-                else toplamKasa -= tutarVal;
-
-                const tarihGosterim = k.tarih ? new Date(k.tarih).toLocaleDateString('tr-TR') : '-';
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-zinc-800/40">
-                        <td class="p-3.5 text-gray-400">${tarihGosterim}</td>
-                        <td class="p-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${k.tip === 'Gelir' ? 'bg-green-950 text-green-400' : 'bg-red-950 text-red-400'}">${k.tip || 'Gelir'}</span></td>
-                        <td class="p-3.5 font-medium text-white">${k.baslik || '-'}</td>
-                        <td class="p-3.5 text-gray-400">${k.kategori || '-'}</td>
-                        <td class="p-3.5 text-right font-bold ${k.tip === 'Gelir' ? 'text-green-400' : 'text-red-400'}">${k.tip === 'Gelir' ? '+' : '-'}₺${tutarVal}</td>
-                    </tr>
-                `;
-            });
-            document.getElementById('stat-kasa').innerText = `₺${toplamKasa}`;
-        }
-
-        async function saveKasa(e) {
-            e.preventDefault();
-            const bugunTarih = new Date().toISOString().split('T')[0];
-            const payload = {
-                tip: document.getElementById('k-tip').value,
-                baslik: document.getElementById('k-baslik').value,
-                tutar: Number(document.getElementById('k-tutar').value),
-                kategori: document.getElementById('k-kategori').value,
-                tarih: bugunTarih
-            };
-            const { error } = await supabaseClient.from('kasa_hareketleri').insert([payload]);
-            if (error) { alert('Hata: ' + error.message); return; }
-            closeKasaModal();
-            loadKasa();
-        }
-
-        function switchTab(tab) {
-            document.getElementById('sec-uyeler').classList.toggle('hidden', tab !== 'uyeler');
-            document.getElementById('sec-kasa').classList.toggle('hidden', tab !== 'kasa');
-            
-            document.getElementById('tab-uyeler').className = tab === 'uyeler' ? 'flex-1 py-2.5 rounded-lg bg-red-600 text-white transition' : 'flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition';
-            document.getElementById('tab-kasa').className = tab === 'kasa' ? 'flex-1 py-2.5 rounded-lg bg-green-600 text-white transition' : 'flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition';
+            if (!confirm('Bu sporcuyu silmek istediğinizden emin misiniz?')) return;
+            const { error } = await supabaseClient.from('uyeler').delete().eq('id', id);
+            if (error) { alert('Silme hatası: ' + error.message); return; }
+            loadData();
         }
 
         function openUyeModal() {
             document.getElementById('uye-form').reset();
             document.getElementById('uye-id').value = '';
-            document.getElementById('m-toplam-ders').value = 12;
-            document.getElementById('modal-title').innerText = "Yeni Sporcu Kaydı";
+            document.getElementById('modal-title').innerText = 'Yeni Sporcu Kaydı';
+            
+            const d = new Date();
+            d.setMonth(d.getMonth() + 1);
+            document.getElementById('m-bitis').value = d.toISOString().split('T')[0];
+            
             document.getElementById('uye-modal').classList.remove('hidden');
         }
+
         function closeUyeModal() { document.getElementById('uye-modal').classList.add('hidden'); }
-        function openKasaModal() { document.getElementById('kasa-modal').classList.remove('hidden'); }
+
+        // --- KASA / GELİR-GİDER İŞLEMLERİ ---
+        async function loadKasa() {
+            const { data: kasa, error } = await supabaseClient.from('kasa_hareketleri').select('*').order('tarih', { ascending: false });
+            if (error) { console.error("Kasa hareketleri yüklenemedi:", error.message); return; }
+            
+            const list = kasa || [];
+            const tbody = document.getElementById('kasa-listesi');
+            tbody.innerHTML = '';
+
+            let toplamBakiye = 0;
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">Kasa hareketi bulunamadı.</td></tr>`;
+            } else {
+                list.forEach(k => {
+                    const isGelir = k.tip === 'Gelir';
+                    if (isGelir) {
+                        toplamBakiye += Number(k.tutar || 0);
+                    } else {
+                        toplamBakiye -= Number(k.tutar || 0);
+                    }
+
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-zinc-800/40">
+                            <td class="p-3.5 text-gray-400">${k.tarih || '-'}</td>
+                            <td class="p-3.5"><span class="px-2 py-0.5 rounded border text-[10px] font-bold ${isGelir ? 'bg-green-950 text-green-400 border-green-800' : 'bg-red-950 text-red-400 border-red-800'}">${k.tip}</span></td>
+                            <td class="p-3.5 font-bold text-white">${k.baslik}</td>
+                            <td class="p-3.5 text-gray-400">${k.kategori || '-'}</td>
+                            <td class="p-3.5 text-right font-bold ${isGelir ? 'text-green-400' : 'text-red-400'}">${isGelir ? '+' : '-'}₺${k.tutar}</td>
+                            <td class="p-3.5 text-right">
+                                <button onclick="deleteKasa('${k.id}')" class="bg-red-950 hover:bg-red-900 text-red-400 p-1.5 rounded"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            document.getElementById('stat-kasa').innerText = `₺${toplamBakiye}`;
+        }
+
+        function openKasaModal() {
+            document.getElementById('kasa-form').reset();
+            document.getElementById('kasa-modal').classList.remove('hidden');
+        }
+
         function closeKasaModal() { document.getElementById('kasa-modal').classList.add('hidden'); }
+
+        async function saveKasa(e) {
+            e.preventDefault();
+            const tip = document.getElementById('k-tip').value;
+            const baslik = document.getElementById('k-baslik').value;
+            const tutar = Number(document.getElementById('k-tutar').value);
+            const kategori = document.getElementById('k-kategori').value;
+            const tarih = new Date().toISOString().split('T')[0];
+
+            const { error } = await supabaseClient.from('kasa_hareketleri').insert([{ tip, baslik, tutar, kategori, tarih }]);
+            if (error) { alert('Hata: ' + error.message); return; }
+
+            closeKasaModal();
+            loadKasa();
+        }
+
+        async function deleteKasa(id) {
+            if (!confirm('Bu kasa hareketini silmek istediğinizden emin misiniz?')) return;
+            const { error } = await supabaseClient.from('kasa_hareketleri').delete().eq('id', id);
+            if (error) { alert('Silme hatası: ' + error.message); return; }
+            loadKasa();
+        }
+
+        // --- SEKME DEĞİŞTİRME ---
+        function switchTab(tab) {
+            const btnUyeler = document.getElementById('tab-uyeler');
+            const btnKasa = document.getElementById('tab-kasa');
+            const secUyeler = document.getElementById('sec-uyeler');
+            const secKasa = document.getElementById('sec-kasa');
+
+            if (tab === 'uyeler') {
+                btnUyeler.className = "flex-1 py-2.5 rounded-lg bg-red-600 text-white transition";
+                btnKasa.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
+                secUyeler.classList.remove('hidden');
+                secKasa.classList.add('hidden');
+            } else {
+                btnKasa.className = "flex-1 py-2.5 rounded-lg bg-green-600 text-white transition";
+                btnUyeler.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
+                secKasa.classList.remove('hidden');
+                secUyeler.classList.add('hidden');
+            }
+        }
     </script>
 </body>
 </html>
