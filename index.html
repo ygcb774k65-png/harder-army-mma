@@ -304,7 +304,7 @@
         function saveConfig() {
             let url = document.getElementById('sb-url').value.trim();
             let key = document.getElementById('sb-key').value.trim();
-            if(!url || !key) { alert('Lütfen URL ve Key alanlarını doldurun!'); return; }
+            if(!url || !key) { alert('Lütfen URL and Key alanlarını doldurun!'); return; }
             localStorage.setItem('sb_url', url);
             localStorage.setItem('sb_key', key);
             initSupabase(url, key);
