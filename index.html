@@ -407,6 +407,8 @@
 
     <!-- JavaScript Uygulama Mantığı -->
     <script>
+        const SUPABASE_URL = 'https://igbctnhpljcklhgmuxrg.supabase.co';
+        const SUPABASE_PUBLIC_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnYmN0bmhwbGpja2xoZ211eHJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MzA3NTYsImV4cCI6MjEwNzUwNjc1Nn0.Xi9-6Q1BD72F38efC6IEMCR4aPxPKlZBLu7-cl4WkX0';
         let supabaseClient = null;
         let allUyeler = [];
         let allKasa = [];
@@ -424,29 +426,26 @@
         }
 
         window.onload = function() {
-            const savedUrl = localStorage.getItem('sb_url');
-            const savedKey = localStorage.getItem('sb_key');
-            if (savedUrl && savedKey) {
-                document.getElementById('sb-url').value = savedUrl;
-                document.getElementById('sb-key').value = savedKey;
-                initSupabase(savedUrl, savedKey);
-            } else {
-                document.getElementById('setup-box').classList.remove('hidden');
-            }
+            document.getElementById('sb-url').value = SUPABASE_URL;
+            document.getElementById('sb-key').value = SUPABASE_PUBLIC_KEY;
+            initSupabase(SUPABASE_URL, SUPABASE_PUBLIC_KEY);
 
-            // URL içinde QR otomatik giriş parametresi var mı kontrol et (Örn: ?view=ogrenci)
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('view') === 'ogrenci') {
-                switchMainView('ogrenci');
-            }
+            if (urlParams.get('view') === 'ogrenci') switchMainView('ogrenci');
         };
 
         function toggleSetup() { document.getElementById('setup-box').classList.toggle('hidden'); }
+
+        function isClientSafeKey(key) {
+            if (key.startsWith('sb_publishable_')) return true;
+            try { return JSON.parse(atob(key.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).role === 'anon'; } catch (e) { return false; }
+        }
 
         function saveConfig() {
             let url = document.getElementById('sb-url').value.trim();
             let key = document.getElementById('sb-key').value.trim();
             if(!url || !key) { alert('Lütfen URL ve Key alanlarını doldurun!'); return; }
+            if (!isClientSafeKey(key)) { alert('Service role/secret anahtarını tarayıcıda kullanmayın. Publishable veya anon anahtar kullanın.'); return; }
             localStorage.setItem('sb_url', url);
             localStorage.setItem('sb_key', key);
             initSupabase(url, key);
@@ -540,6 +539,8 @@
             currentLoggedInUye = ogrenci;
             if (ogrenci.sozlesme_kabul_edildi !== true) {
                 pendingAgreementUyeId = ogrenci.id;
+                document.getElementById('sozlesme-onay').closest('label').classList.remove('hidden');
+                document.getElementById('sozlesme-kabul-btn').classList.remove('hidden');
                 document.getElementById('sozlesme-onay').checked = false;
                 document.getElementById('sozlesme-kabul-btn').disabled = true;
                 document.getElementById('sozlesme-modal').classList.remove('hidden');
@@ -650,6 +651,8 @@
 
         function openSozlesmeModal() {
             pendingAgreementUyeId = null;
+            document.getElementById('sozlesme-onay').closest('label').classList.add('hidden');
+            document.getElementById('sozlesme-kabul-btn').classList.add('hidden');
             document.getElementById('sozlesme-onay').checked = false;
             document.getElementById('sozlesme-kabul-btn').disabled = true;
             document.getElementById('sozlesme-modal').classList.remove('hidden');
