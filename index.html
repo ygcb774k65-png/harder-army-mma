@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- QR Kod Oluşturma Kütüphanesi -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-black text-gray-100 font-sans min-h-screen pb-20">
@@ -202,6 +203,10 @@
                             <i class="fa-solid fa-qrcode text-base"></i>
                             <span>Check-In Yap</span>
                         </button>
+                        <button onclick="startAttendanceQrScan()" class="bg-yellow-600 hover:bg-yellow-700 text-black font-bold p-3.5 rounded-xl text-xs flex flex-col items-center justify-center gap-1 shadow-lg transition">
+                            <i class="fa-solid fa-camera text-base"></i>
+                            <span>QR Tara</span>
+                        </button>
                     </div>
                 </div>
 
@@ -214,6 +219,16 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- MODAL: UYGULAMA İÇİ SALON QR TARAMA -->
+    <div id="attendance-qr-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[70] flex items-center justify-center p-4 hidden">
+        <div class="bg-zinc-900 border border-yellow-700/60 w-full max-w-sm rounded-2xl p-5 text-center space-y-4">
+            <div class="flex justify-between items-center"><h3 class="text-sm font-bold text-yellow-400">Salon QR Kodunu Tara</h3><button onclick="stopAttendanceQrScan()" class="text-gray-300 text-xl" aria-label="Tarayıcıyı kapat">×</button></div>
+            <p id="attendance-qr-status" class="text-xs text-gray-400">Kamerayı salon QR koduna yöneltin.</p>
+            <div id="attendance-qr-reader" class="overflow-hidden rounded-xl"></div>
+            <button onclick="stopAttendanceQrScan()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-xl text-xs font-bold">Vazgeç</button>
+        </div>
     </div>
 
     <!-- MODAL: QR KOD DUVAR PENCERESİ -->
@@ -411,18 +426,28 @@
         const SUPABASE_PUBLIC_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnYmN0bmhwbGpja2xoZ211eHJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MzA3NTYsImV4cCI6MjEwNzUwNjc1Nn0.Xi9-6Q1BD72F38efC6IEMCR4aPxPKlZBLu7-cl4WkX0';
         let supabaseClient = null;
         let allUyeler = [];
+        let uyeLoadError = null;
         let allKasa = [];
         let activeUyeForSeans = null;
         let activeSeansIndex = null;
         let currentLoggedInUye = null;
         let pendingAgreementUyeId = null;
         let checkInInProgress = false;
+        let attendanceQrScanner = null;
+        let attendanceScanBusy = false;
 
         function escapeHtml(value) {
             return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
         }
         function localDateISO(date = new Date()) {
             return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+        }
+        function normalizePhone(value) {
+            let digits = String(value || '').replace(/\D/g, '');
+            if (digits.startsWith('0090')) digits = digits.slice(4);
+            else if (digits.startsWith('90') && digits.length >= 12) digits = digits.slice(2);
+            if (digits.startsWith('0') && digits.length === 11) digits = digits.slice(1);
+            return digits;
         }
 
         window.onload = function() {
@@ -527,12 +552,16 @@
         async function ogrenciGirisYap() {
             if (!supabaseClient) { alert('Veritabanı bağlantısı kurulamadı.'); return; }
             const tel = document.getElementById('ogrenci-telefon-input').value.trim();
-            const temizTel = tel.replace(/\D/g, '');
+            const temizTel = normalizePhone(tel);
             if (!temizTel) { alert('Lütfen telefon numaranızı girin!'); return; }
 
-            const ogrenci = allUyeler.find(u => u.telefon && u.telefon.replace(/\D/g, '') === temizTel);
+            if (uyeLoadError) {
+                alert('Üye kayıtları veritabanından yüklenemedi: ' + uyeLoadError.message + '\nSupabase SELECT iznini ve RLS politikasını kontrol edin.');
+                return;
+            }
+            const ogrenci = allUyeler.find(u => normalizePhone(u.telefon) === temizTel);
             if (!ogrenci) {
-                alert('Bu telefon numarasına ait kayıtlı bir sporcu bulunamadı! Lütfen salon yöneticisi ile görüşün.');
+                alert('Bu telefon numarasına ait kayıtlı üye bulunamadı. Numarayı yönetici kaydındaki telefonla kontrol edin.');
                 return;
             }
 
@@ -593,6 +622,32 @@
                     </div>
                 `;
             }
+        }
+
+        function isGymQrCode(value) {
+            try { const scanned = new URL(value); const current = new URL(window.location.href); return scanned.origin === current.origin && scanned.pathname === current.pathname && scanned.searchParams.get('view') === 'ogrenci'; } catch (e) { return false; }
+        }
+
+        async function startAttendanceQrScan() {
+            if (!currentLoggedInUye) { alert('Önce telefon numaranızla öğrenci girişi yapın.'); return; }
+            if (!supabaseClient) { alert('Veritabanı bağlantısı kurulamadı.'); return; }
+            if (typeof Html5Qrcode === 'undefined') { alert('QR tarama kütüphanesi yüklenemedi. Sayfayı yenileyip tekrar deneyin.'); return; }
+            attendanceScanBusy = false; document.getElementById('attendance-qr-status').innerText = 'Kamerayı salon QR koduna yöneltin.'; document.getElementById('attendance-qr-modal').classList.remove('hidden');
+            try {
+                attendanceQrScanner = new Html5Qrcode('attendance-qr-reader');
+                await attendanceQrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } }, async (decodedText) => {
+                    if (attendanceScanBusy) return;
+                    if (!isGymQrCode(decodedText)) { document.getElementById('attendance-qr-status').innerText = 'Bu salonun QR kodu değil. Salon giriş QR kodunu okutun.'; return; }
+                    attendanceScanBusy = true; document.getElementById('attendance-qr-status').innerText = 'QR doğrulandı, dersiniz işleniyor…';
+                    try { await stopAttendanceQrScan(); await ogrenciCheckInYap(); } finally { attendanceScanBusy = false; }
+                }, () => {});
+            } catch (error) { await stopAttendanceQrScan(); alert('Kamera açılamadı. Kamera izni verin ve siteyi HTTPS üzerinden açın. ' + (error?.message || '')); }
+        }
+
+        async function stopAttendanceQrScan() {
+            const scanner = attendanceQrScanner; attendanceQrScanner = null;
+            if (scanner) { try { if (scanner.isScanning) await scanner.stop(); } catch (e) {} try { scanner.clear(); } catch (e) {} }
+            document.getElementById('attendance-qr-modal').classList.add('hidden');
         }
 
         async function ogrenciCheckInYap() {
