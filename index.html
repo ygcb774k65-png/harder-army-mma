@@ -948,4 +948,469 @@
         }
     </script>
 </body>
-</html>
+</html><!-- JavaScript Uygulama Mantığı -->
+    <script>
+        let supabaseClient = null;
+        let allUyeler = [];
+        let allKasa = [];
+        let activeUyeForSeans = null;
+        let activeSeansIndex = null;
+        let currentLoggedInUye = null;
+
+        window.onload = function() {
+            const savedUrl = localStorage.getItem('sb_url');
+            const savedKey = localStorage.getItem('sb_key');
+            if (savedUrl && savedKey) {
+                document.getElementById('sb-url').value = savedUrl;
+                document.getElementById('sb-key').value = savedKey;
+                initSupabase(savedUrl, savedKey);
+            } else {
+                document.getElementById('setup-box').classList.remove('hidden');
+            }
+
+            // URL içinde QR otomatik giriş parametresi kontrolü
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('view') === 'ogrenci') {
+                switchMainView('ogrenci');
+            }
+        };
+
+        function toggleSetup() { document.getElementById('setup-box').classList.toggle('hidden'); }
+
+        function saveConfig() {
+            let url = document.getElementById('sb-url').value.trim();
+            let key = document.getElementById('sb-key').value.trim();
+            if(!url || !key) { alert('Lütfen URL ve Key alanlarını doldurun!'); return; }
+            localStorage.setItem('sb_url', url);
+            localStorage.setItem('sb_key', key);
+            initSupabase(url, key);
+        }
+
+        function initSupabase(url, key) {
+            try {
+                supabaseClient = window.supabase.createClient(url, key);
+                document.getElementById('setup-box').classList.add('hidden');
+                loadData();
+            } catch (e) { alert('Bağlantı hatası: ' + e.message); }
+        }
+
+        async function loadData() {
+            if (!supabaseClient) return;
+            await loadUyeler();
+            await loadKasa();
+        }
+
+        // --- GÖRÜNÜM VE SEKME GEÇİŞLERİ ---
+        function switchMainView(view) {
+            const vYonetim = document.getElementById('view-yonetim');
+            const vOgrenci = document.getElementById('view-ogrenci');
+            const btnOg = document.getElementById('btn-view-ogrenci');
+
+            if (view === 'ogrenci') {
+                vYonetim.classList.add('hidden');
+                vOgrenci.classList.remove('hidden');
+                btnOg.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> Yönetici Paneli';
+                btnOg.setAttribute('onclick', "switchMainView('yonetim')");
+            } else {
+                vYonetim.classList.remove('hidden');
+                vOgrenci.classList.add('hidden');
+                btnOg.innerHTML = '<i class="fa-solid fa-user mr-1"></i> Öğrenci Girişi';
+                btnOg.setAttribute('onclick', "switchMainView('ogrenci')");
+            }
+        }
+
+        function switchTab(tab) {
+            const secUyeler = document.getElementById('sec-uyeler');
+            const secKasa = document.getElementById('sec-kasa');
+            const tabUyeler = document.getElementById('tab-uyeler');
+            const tabKasa = document.getElementById('tab-kasa');
+
+            if (tab === 'uyeler') {
+                secUyeler.classList.remove('hidden');
+                secKasa.classList.add('hidden');
+                tabUyeler.className = "flex-1 py-2.5 rounded-lg bg-red-600 text-white transition font-bold";
+                tabKasa.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
+            } else {
+                secUyeler.classList.add('hidden');
+                secKasa.classList.remove('hidden');
+                tabUyeler.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
+                tabKasa.className = "flex-1 py-2.5 rounded-lg bg-green-600 text-white transition font-bold";
+            }
+        }
+
+        // --- VERİ YÜKLEME VE LİSTELEME ---
+        async function loadUyeler() {
+            let { data, error } = await supabaseClient.from('uyeler').select('*').order('created_at', { ascending: false });
+            if (error) { console.error('Üye yükleme hatası:', error.message); return; }
+            allUyeler = data || [];
+            renderUyeler(allUyeler);
+            hesaplaIstatistikler();
+        }
+
+        async function loadKasa() {
+            let { data, error } = await supabaseClient.from('kasa').select('*').order('tarih', { ascending: false });
+            if (error) { console.error('Kasa yükleme hatası:', error.message); return; }
+            allKasa = data || [];
+            renderKasa(allKasa);
+            hesaplaIstatistikler();
+        }
+
+        function renderUyeler(liste) {
+            const tbody = document.getElementById('uye-listesi');
+            if (liste.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-gray-500">Kayıtlı sporcu bulunamadı.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = liste.map(u => {
+                let seanslar = u.seanslar || [];
+                let tamamlanan = seanslar.filter(s => s.durum === 'tamamlandi').length;
+                let toplamDers = u.toplam_ders || 12;
+                let durumColor = u.durum === 'Aktif' ? 'bg-green-600/20 text-green-400 border-green-900/50' : (u.durum === 'Bitişi Yaklaşan' ? 'bg-yellow-600/20 text-yellow-400 border-yellow-900/50' : 'bg-red-600/20 text-red-400 border-red-900/50');
+
+                return `
+                    <tr class="hover:bg-zinc-800/40 transition">
+                        <td class="p-3.5 font-bold text-white">${u.ad_soyad}</td>
+                        <td class="p-3.5 text-gray-400">${u.telefon}</td>
+                        <td class="p-3.5"><span class="bg-zinc-800 text-gray-300 px-2 py-1 rounded-md text-[11px]">${u.paket}</span></td>
+                        <td class="p-3.5">
+                            <button onclick="openSeansModal('${u.id}')" class="bg-zinc-800 hover:bg-zinc-700 text-green-400 font-bold px-2.5 py-1 rounded-lg text-xs border border-zinc-700 flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-calendar-check"></i> ${tamamlanan} / ${toplamDers}
+                            </button>
+                        </td>
+                        <td class="p-3.5 font-semibold text-green-400">₺${u.ucret || 0}</td>
+                        <td class="p-3.5 text-gray-300">${u.bitis_tarihi || '-'}</td>
+                        <td class="p-3.5"><span class="border px-2 py-0.5 rounded-full text-[10px] font-bold ${durumColor}">${u.durum}</span></td>
+                        <td class="p-3.5 text-right space-x-1">
+                            <button onclick="editUye('${u.id}')" class="text-blue-400 hover:text-blue-300 p-1"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteUye('${u.id}')" class="text-red-400 hover:text-red-300 p-1"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderKasa(liste) {
+            const tbody = document.getElementById('kasa-listesi');
+            if (liste.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">Kasa hareketi bulunamadı.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = liste.map(k => `
+                <tr class="hover:bg-zinc-800/40 transition">
+                    <td class="p-3.5 text-gray-400">${k.tarih}</td>
+                    <td class="p-3.5"><span class="${k.tip === 'Gelir' ? 'text-green-400' : 'text-red-400'} font-bold">${k.tip}</span></td>
+                    <td class="p-3.5 text-white font-medium">${k.baslik}</td>
+                    <td class="p-3.5 text-gray-400">${k.kategori || '-'}</td>
+                    <td class="p-3.5 text-right font-bold ${k.tip === 'Gelir' ? 'text-green-400' : 'text-red-400'}">${k.tip === 'Gelir' ? '+' : '-'}₺${k.tutar}</td>
+                    <td class="p-3.5 text-right"><button onclick="deleteKasa('${k.id}')" class="text-red-400 hover:text-red-300 p-1"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>
+            `).join('');
+        }
+
+        function hesaplaIstatistikler() {
+            let aktif = allUyeler.filter(u => u.durum === 'Aktif').length;
+            let biten = allUyeler.filter(u => u.durum === 'Bitişi Yaklaşan').length;
+            let toplamKayit = allUyeler.length;
+
+            let toplamGelir = allKasa.filter(k => k.tip === 'Gelir').reduce((acc, curr) => acc + Number(curr.tutar), 0);
+            let toplamGider = allKasa.filter(k => k.tip === 'Gider').reduce((acc, curr) => acc + Number(curr.tutar), 0);
+            let netKasa = toplamGelir - toplamGider;
+
+            document.getElementById('stat-aktif').innerText = aktif;
+            document.getElementById('stat-biten').innerText = biten;
+            document.getElementById('stat-toplam').innerText = toplamKayit;
+            document.getElementById('stat-kasa').innerText = `₺${netKasa}`;
+            document.getElementById('stat-kasa').className = `text-2xl font-black mt-1 ${netKasa >= 0 ? 'text-green-500' : 'text-red-500'}`;
+        }
+
+        function filterUyeler() {
+            let query = document.getElementById('uye-ara').value.toLowerCase().trim();
+            let filtrelenmis = allUyeler.filter(u => u.ad_soyad.toLowerCase().includes(query) || (u.telefon && u.telefon.includes(query)));
+            renderUyeler(filtrelenmis);
+        }
+
+        // --- ÖĞRENCİ GİRİŞ & CHECK-IN (DÜZELTİLEN VE GÜÇLENDİRİLEN KISIM) ---
+        async function ogrenciGirisYap() {
+            let telInput = document.getElementById('ogrenci-telefon-input').value.trim();
+            if (!telInput) {
+                alert('Lütfen telefon numaranızı girin!');
+                return;
+            }
+
+            // Telefon numarasındaki boşlukları ve karakterleri temizle (esnek eşleşme için)
+            let temizTel = telInput.replace(/\D/g, ''); 
+            
+            // Veritabanında eşleşme arama (hem tam metin hem temizlenmiş format kontrolü)
+            currentLoggedInUye = allUyeler.find(u => {
+                if (!u.telefon) return false;
+                let uTelTemiz = u.telefon.replace(/\D/g, '');
+                return uTelTemiz === temizTel || uTelTemiz.endsWith(temizTel) || temizTel.endsWith(uTelTemiz);
+            });
+
+            // Eğer bellek yüklenmediyse doğrudan Supabase'den sorgula
+            if (!currentLoggedInUye && supabaseClient) {
+                let { data, error } = await supabaseClient.from('uyeler').select('*').ilike('telefon', `%${telInput}%`);
+                if (data && data.length > 0) {
+                    currentLoggedInUye = data[0];
+                }
+            }
+
+            if (!currentLoggedInUye) {
+                alert('Bu telefon numarasına ait aktif bir sporcu kaydı bulunamadı. Lütfen salon yöneticisi ile görüşün.');
+                return;
+            }
+
+            gosterOgrenciPaneli(currentLoggedInUye);
+        }
+
+        function gosterOgrenciPaneli(uye) {
+            document.getElementById('og-brans-badge').innerText = uye.paket || 'MMA Group';
+            document.getElementById('og-ad-soyad').innerText = uye.ad_soyad;
+            document.getElementById('og-bitis').innerText = uye.bitis_tarihi || 'Belirtilmemiş';
+
+            let seanslar = uye.seanslar || [];
+            let tamamlanan = seanslar.filter(s => s.durum === 'tamamlandi').length;
+            let toplam = uye.toplam_ders || 12;
+
+            document.getElementById('og-kalan').innerText = tamamlanan;
+            document.getElementById('og-toplam').innerText = toplam;
+
+            // Seans kutularını oluştur
+            let seansHTML = '';
+            for (let i = 0; i < toplam; i++) {
+                let seans = seanslar[i];
+                let isTamamlandi = seans && seans.durum === 'tamamlandi';
+                seansHTML += `
+                    <div class="p-2.5 rounded-xl border text-center text-xs ${isTamamlandi ? 'bg-green-950/40 border-green-800/60 text-green-400' : 'bg-black border-zinc-800 text-gray-500'}">
+                        <p class="font-bold">Ders #${i + 1}</p>
+                        <p class="text-[10px] mt-0.5">${isTamamlandi ? (seans.tarih ? seans.tarih.replace('T', ' ') : 'Tamamlandı') : 'Bekliyor'}</p>
+                    </div>
+                `;
+            }
+            document.getElementById('ogrenci-seans-listesi').innerHTML = seansHTML;
+            document.getElementById('ogrenci-detay-alani').classList.remove('hidden');
+        }
+
+        async function ogrenciCheckInYap() {
+            if (!currentLoggedInUye) return;
+            let seanslar = currentLoggedInUye.seanslar || [];
+            let toplamDers = currentLoggedInUye.toplam_ders || 12;
+
+            // İlk boş (tamamlanmamış) seansı bul ve tamamla
+            let index = seanslar.findIndex(s => s.durum !== 'tamamlandi');
+            if (index === -1 && seanslar.length >= toplamDers) {
+                alert('Paketinizdeki tüm ders haklarını tamamladınız!');
+                return;
+            }
+
+            let simdi = new Date().toISOString().slice(0, 16);
+            if (index === -1) {
+                seanslar.push({ tarih: simdi, durum: 'tamamlandi' });
+            } else {
+                seanslar[index] = { tarih: simdi, durum: 'tamamlandi' };
+            }
+
+            let { error } = await supabaseClient.from('uyeler').update({ seanslar: seanslar }).eq('id', currentLoggedInUye.id);
+            if (error) {
+                alert('Check-in yapılırken hata oluştu: ' + error.message);
+                return;
+            }
+
+            alert('Check-in işlemi başarılı! Osu!');
+            await loadUyeler();
+            currentLoggedInUye = allUyeler.find(u => u.id === currentLoggedInUye.id);
+            gosterOgrenciPaneli(currentLoggedInUye);
+        }
+
+        // --- MODAL YÖNETİMLERİ ---
+        function openUyeModal(id = null) {
+            document.getElementById('uye-form').reset();
+            document.getElementById('uye-id').value = '';
+            document.getElementById('modal-title').innerText = 'Yeni Sporcu Kaydı';
+            document.getElementById('m-bitis').value = new Date().toISOString().split('T')[0];
+            if (id) {
+                let u = allUyeler.find(x => x.id == id);
+                if (u) {
+                    document.getElementById('modal-title').innerText = 'Sporcu Bilgilerini Düzenle';
+                    document.getElementById('uye-id').value = u.id;
+                    document.getElementById('m-ad').value = u.ad_soyad;
+                    document.getElementById('m-tel').value = u.telefon;
+                    document.getElementById('m-paket').value = u.paket;
+                    document.getElementById('m-ucret').value = u.ucret;
+                    document.getElementById('m-toplam-ders').value = u.toplam_ders || 12;
+                    document.getElementById('m-bitis').value = u.bitis_tarihi;
+                    document.getElementById('m-durum').value = u.durum;
+                }
+            }
+            document.getElementById('uye-modal').classList.remove('hidden');
+        }
+
+        function closeUyeModal() { document.getElementById('uye-modal').classList.add('hidden'); }
+
+        async function saveUye(e) {
+            e.preventDefault();
+            let id = document.getElementById('uye-id').value;
+            let formData = {
+                ad_soyad: document.getElementById('m-ad').value.trim(),
+                telefon: document.getElementById('m-tel').value.trim(),
+                paket: document.getElementById('m-paket').value,
+                ucret: Number(document.getElementById('m-ucret').value),
+                toplam_ders: Number(document.getElementById('m-toplam-ders').value),
+                bitis_tarihi: document.getElementById('m-bitis').value,
+                durum: document.getElementById('m-durum').value
+            };
+
+            let res;
+            if (id) {
+                res = await supabaseClient.from('uyeler').update(formData).eq('id', id);
+            } else {
+                formData.seanslar = [];
+                res = await supabaseClient.from('uyeler').insert([formData]);
+            }
+
+            if (res.error) {
+                alert('Kayıt kaydedilirken hata oluştu: ' + res.error.message);
+                return;
+            }
+
+            closeUyeModal();
+            loadData();
+        }
+
+        async function deleteUye(id) {
+            if (!confirm('Bu sporcuyu silmek istediğinize emin misiniz?')) return;
+            let { error } = await supabaseClient.from('uyeler').delete().eq('id', id);
+            if (error) { alert('Silme hatası: ' + error.message); return; }
+            loadData();
+        }
+
+        function openQrModal() {
+            document.getElementById('qr-modal').classList.remove('hidden');
+            let container = document.getElementById('qrcode-container');
+            container.innerHTML = '';
+            let currentUrl = window.location.origin + window.location.pathname + '?view=ogrenci';
+            new QRCode(container, {
+                text: currentUrl,
+                width: 180,
+                height: 180,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); }
+        function openSozlesmeModal() { document.getElementById('sozlesme-modal').classList.remove('hidden'); }
+        function closeSozlesmeModal() { document.getElementById('sozlesme-modal').classList.add('hidden'); }
+        function openKasaModal() { document.getElementById('kasa-modal').classList.remove('hidden'); }
+        function closeKasaModal() { document.getElementById('kasa-modal').classList.add('hidden'); }
+
+        async function saveKasa(e) {
+            e.preventDefault();
+            let formData = {
+                tip: document.getElementById('k-tip').value,
+                baslik: document.getElementById('k-baslik').value.trim(),
+                tutar: Number(document.getElementById('k-tutar').value),
+                kategori: document.getElementById('k-kategori').value,
+                tarih: new Date().toISOString().split('T')[0]
+            };
+            let { error } = await supabaseClient.from('kasa').insert([formData]);
+            if (error) { alert('Kasa hareketi eklenirken hata: ' + error.message); return; }
+            closeKasaModal();
+            loadData();
+        }
+
+        async function deleteKasa(id) {
+            if (!confirm('Bu kasa hareketini silmek istediğinize emin misiniz?')) return;
+            let { error } = await supabaseClient.from('kasa').delete().eq('id', id);
+            if (error) { alert('Silme hatası: ' + error.message); return; }
+            loadData();
+        }
+
+        // Seans Modal ve Takip Fonksiyonları
+        function openSeansModal(uyeId) {
+            activeUyeForSeans = allUyeler.find(u => u.id == uyeId);
+            if (!activeUyeForSeans) return;
+
+            document.getElementById('seans-modal-title').innerText = `${activeUyeForSeans.ad_soyad} - Seans Takibi`;
+            document.getElementById('seans-modal-paket').innerText = activeUyeForSeans.paket;
+            renderSeansListesi();
+            document.getElementById('seans-modal').classList.remove('hidden');
+        }
+
+        function closeSeansModal() { document.getElementById('seans-modal').classList.add('hidden'); }
+
+        function renderSeansListesi() {
+            let container = document.getElementById('seans-listesi-container');
+            let toplam = activeUyeForSeans.toplam_ders || 12;
+            let seanslar = activeUyeForSeans.seanslar || [];
+            let html = '';
+
+            for (let i = 0; i < toplam; i++) {
+                let s = seanslar[i];
+                let isTamamlandi = s && s.durum === 'tamamlandi';
+                let tarihStr = s && s.tarih ? s.tarih.replace('T', ' ') : 'Tarih seçilmedi';
+
+                html += `
+                    <div onclick="seansSec('${i}')" class="p-3 rounded-xl border cursor-pointer transition flex justify-between items-center ${isTamamlandi ? 'bg-green-950/30 border-green-800/60 text-green-400' : 'bg-black border-zinc-800 text-gray-400 hover:border-zinc-700'}">
+                        <div>
+                            <p class="font-bold text-xs">Ders #${i + 1}</p>
+                            <p class="text-[10px] text-gray-400 mt-0.5">${tarihStr}</p>
+                        </div>
+                        <span class="text-xs px-2.5 py-1 rounded-lg font-bold ${isTamamlandi ? 'bg-green-600 text-white' : 'bg-zinc-800 text-gray-400'}">
+                            ${isTamamlandi ? 'Tamamlandı' : 'Bekliyor'}
+                        </span>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function seansSec(index) {
+            activeSeansIndex = Number(index);
+            let seanslar = activeUyeForSeans.seanslar || [];
+            let s = seanslar[activeSeansIndex];
+            
+            document.getElementById('tarih-modal-baslik').innerText = `Ders #${activeSeansIndex + 1} Tarih ve Saati`;
+            document.getElementById('secilen-tarih-saat').value = s && s.tarih ? s.tarih : new Date().toISOString().slice(0, 16);
+            document.getElementById('seans-tarih-modal').classList.remove('hidden');
+        }
+
+        function closeTarihModal() { document.getElementById('seans-tarih-modal').classList.add('hidden'); }
+
+        async function seansiKaydetOnayla() {
+            let yeniTarih = document.getElementById('secilen-tarih-saat').value;
+            if (!yeniTarih) { alert('Lütfen tarih ve saat seçin!'); return; }
+
+            let seanslar = activeUyeForSeans.seanslar || [];
+            // Eksik indisleri boş objelerle doldur
+            while(seanslar.length <= activeSeansIndex) {
+                seanslar.push({ tarih: '', durum: 'bekliyor' });
+            }
+
+            seanslar[activeSeansIndex] = { tarih: yeniTarih, durum: 'tamamlandi' };
+
+            let { error } = await supabaseClient.from('uyeler').update({ seanslar: seanslar }).eq('id', activeUyeForSeans.id);
+            if (error) { alert('Hata: ' + error.message); return; }
+
+            closeTarihModal();
+            await loadUyeler();
+            activeUyeForSeans = allUyeler.find(u => u.id === activeUyeForSeans.id);
+            renderSeansListesi();
+        }
+
+        async function seansiKaldir() {
+            let seanslar = activeUyeForSeans.seanslar || [];
+            if (seanslar[activeSeansIndex]) {
+                seanslar[activeSeansIndex] = { tarih: '', durum: 'bekliyor' };
+            }
+
+            let { error } = await supabaseClient.from('uyeler').update({ seanslar: seanslar }).eq('id', activeUyeForSeans.id);
+            if (error) { alert('Hata: ' + error.message); return; }
+
+            closeTarihModal();
+            await loadUyeler();
+            activeUyeForSeans = allUyeler.find(u => u.id === activeUyeForSeans.id);
+            renderSeansListesi();
+        }
+    </script>
