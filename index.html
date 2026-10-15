@@ -414,7 +414,6 @@
                 document.getElementById('setup-box').classList.remove('hidden');
             }
 
-            // URL içinde QR otomatik giriş parametresi var mı kontrol et (Örn: ?view=ogrenci)
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('view') === 'ogrenci') {
                 switchMainView('ogrenci');
@@ -484,13 +483,12 @@
             }
         }
 
-        // --- QR KOD YÖNETİCİ PENCERESİ ---
+        // --- QR KOD DUVAR PENCERESİ ---
         function openQrModal() {
             document.getElementById('qr-modal').classList.remove('hidden');
             const container = document.getElementById('qrcode-container');
             container.innerHTML = '';
             
-            // Mevcut sayfa adresinin öğrenci görünümü linkini QR yap
             const currentUrl = window.location.href.split('?')[0] + '?view=ogrenci';
             new QRCode(container, {
                 text: currentUrl,
@@ -509,10 +507,19 @@
             if (!tel) { alert('Lütfen telefon numaranızı girin!'); return; }
 
             const temizTel = tel.replace(/\D/g, '');
-            const ogrenci = allUyeler.find(u => u.telefon && u.telefon.replace(/\D/g, '').includes(temizTel));
+            if (temizTel.length < 10) {
+                alert('Lütfen geçerli bir telefon numarası girin!');
+                return;
+            }
+
+            const ogrenci = allUyeler.find(u => {
+                if (!u.telefon) return false;
+                const dbTel = u.telefon.replace(/\D/g, '');
+                return dbTel.slice(-10) === temizTel.slice(-10);
+            });
 
             if (!ogrenci) {
-                alert('Bu telefon numarasına ait kayıtlı bir sporcu bulunamadı! Lütfen salon yöneticisi ile görüşün.');
+                alert('Bu telefon numarasına ait kayıtlı bir sporcu bulunamadı! Lütfen yönetim panelinden üyeyi eklediğinizden emin olun.');
                 return;
             }
 
@@ -523,7 +530,6 @@
 
         function renderOgrenciPaneli() {
             if (!currentLoggedInUye) return;
-            // Güncel veriyi allUyeler'den tekrar al
             currentLoggedInUye = allUyeler.find(u => u.id === currentLoggedInUye.id) || currentLoggedInUye;
 
             document.getElementById('og-ad-soyad').innerText = currentLoggedInUye.ad_soyad;
@@ -570,7 +576,6 @@
             
             const total = currentLoggedInUye.total_lessons || 12;
             
-            // Boş olan ilk seans indexini bul
             let bosIndex = -1;
             for (let i = 0; i < total; i++) {
                 if (!sessionDates[i]) {
@@ -584,7 +589,6 @@
                 return;
             }
 
-            // Bugünün tarih ve saatini formatla
             const now = new Date();
             const formatted = `${now.getDate()} ${now.toLocaleString('tr-TR', { month: 'short' })} ${now.getFullYear()} - ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} (QR)`;
 
