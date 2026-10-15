@@ -394,8 +394,13 @@
                 <p><strong>4. SALON DİSİPLİNİ VE EKİPMAN:</strong> Antrenmanlarda dişlik, bandaj, eldiven ve kaval koruma gibi zorunlu kişisel koruyucu ekipmanların kullanımı mecburidir.</p>
                 <p class="text-center font-bold text-red-400 pt-2">Osu! Harder Army MMA ailesine hoş geldiniz.</p>
             </div>
-            <div class="pt-2 border-t border-zinc-800">
-                <button onclick="closeSozlesmeModal()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition">Okudum ve Kabul Ediyorum</button>
+            <div class="pt-2 border-t border-zinc-800 space-y-3">
+                <label class="flex items-start gap-2 text-xs text-gray-300">
+                    <input id="sozlesme-onay" type="checkbox" onchange="document.getElementById('sozlesme-kabul-btn').disabled = !this.checked" class="mt-0.5 accent-red-600">
+                    <span>Sözleşme ve salon kurallarını okudum, kabul ediyorum.</span>
+                </label>
+                <button id="sozlesme-kabul-btn" onclick="sozlesmeyiKabulEt()" disabled class="w-full bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-xl text-xs transition">Onayla ve Öğrenci Paneline Geç</button>
+                <button onclick="closeSozlesmeModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 font-bold py-2 rounded-xl text-xs">Kapat</button>
             </div>
         </div>
     </div>
@@ -408,6 +413,8 @@
         let activeUyeForSeans = null;
         let activeSeansIndex = null;
         let currentLoggedInUye = null;
+        let pendingAgreementUyeId = null;
+        let checkInInProgress = false;
 
         function escapeHtml(value) {
             return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
@@ -518,19 +525,30 @@
         function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); }
 
         // --- ÖĞRENCİ GİRİŞ VE CHECK-IN MANTIĞI ---
-        function ogrenciGirisYap() {
-            let tel = document.getElementById('ogrenci-telefon-input').value.trim();
-            if (!tel) { alert('Lütfen telefon numaranızı girin!'); return; }
-
+        async function ogrenciGirisYap() {
+            if (!supabaseClient) { alert('Veritabanı bağlantısı kurulamadı.'); return; }
+            const tel = document.getElementById('ogrenci-telefon-input').value.trim();
             const temizTel = tel.replace(/\D/g, '');
-            const ogrenci = allUyeler.find(u => u.telefon && u.telefon.replace(/\D/g, '') === temizTel);
+            if (!temizTel) { alert('Lütfen telefon numaranızı girin!'); return; }
 
+            const ogrenci = allUyeler.find(u => u.telefon && u.telefon.replace(/\D/g, '') === temizTel);
             if (!ogrenci) {
                 alert('Bu telefon numarasına ait kayıtlı bir sporcu bulunamadı! Lütfen salon yöneticisi ile görüşün.');
                 return;
             }
 
             currentLoggedInUye = ogrenci;
+            if (ogrenci.sozlesme_kabul_edildi !== true) {
+                pendingAgreementUyeId = ogrenci.id;
+                document.getElementById('sozlesme-onay').checked = false;
+                document.getElementById('sozlesme-kabul-btn').disabled = true;
+                document.getElementById('sozlesme-modal').classList.remove('hidden');
+                return;
+            }
+            showOgrenciPanel();
+        }
+
+        function showOgrenciPanel() {
             renderOgrenciPaneli();
             document.getElementById('ogrenci-detay-alani').classList.remove('hidden');
         }
@@ -577,51 +595,103 @@
         }
 
         async function ogrenciCheckInYap() {
-            if (!currentLoggedInUye) return;
+            if (!currentLoggedInUye || checkInInProgress) return;
+            if (!supabaseClient) { alert('Veritabanı bağlantısı yok.'); return; }
 
-            let sessionDates = [];
-            try { sessionDates = typeof currentLoggedInUye.session_dates === 'string' ? JSON.parse(currentLoggedInUye.session_dates) : (currentLoggedInUye.session_dates || []); } catch(e) { sessionDates = []; }
-            
-            const total = currentLoggedInUye.total_lessons || 12;
-            
-            // Boş olan ilk seans indexini bul
-            let bosIndex = -1;
-            for (let i = 0; i < total; i++) {
-                if (!sessionDates[i]) {
-                    bosIndex = i;
-                    break;
+            const button = document.querySelector('#ogrenci-detay-alani button[onclick="ogrenciCheckInYap()"]');
+            checkInInProgress = true;
+            if (button) button.disabled = true;
+            try {
+                let sessionDates = [];
+                try {
+                    sessionDates = typeof currentLoggedInUye.session_dates === 'string'
+                        ? JSON.parse(currentLoggedInUye.session_dates)
+                        : (currentLoggedInUye.session_dates || []);
+                } catch (e) { sessionDates = []; }
+
+                const total = Math.max(0, Math.min(100, Number(currentLoggedInUye.total_lessons) || 12));
+                let emptyIndex = -1;
+                for (let i = 0; i < total; i++) {
+                    if (!sessionDates[i]) { emptyIndex = i; break; }
                 }
+                if (emptyIndex === -1) {
+                    alert('Bu paketteki tüm seanslar tamamlandı. Lütfen yeni paket yükletin.');
+                    return;
+                }
+
+                const now = new Date();
+                const formatted = now.toLocaleString('tr-TR', {
+                    day: 'numeric', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                }) + ' (QR)';
+                sessionDates[emptyIndex] = formatted;
+
+                const { data, error } = await supabaseClient
+                    .from('uyeler')
+                    .update({ session_dates: JSON.stringify(sessionDates) })
+                    .eq('id', currentLoggedInUye.id)
+                    .select('*')
+                    .maybeSingle();
+                if (error) throw error;
+                if (!data) throw new Error('Kayıt güncellenmedi. Supabase UPDATE iznini/RLS politikasını kontrol edin.');
+
+                currentLoggedInUye = data;
+                const index = allUyeler.findIndex(u => String(u.id) === String(data.id));
+                if (index >= 0) allUyeler[index] = data;
+                alert('Seans girişiniz kaydedildi. Osu! 🥋');
+                renderOgrenciPaneli();
+            } catch (error) {
+                alert('Check-in yapılamadı: ' + error.message);
+            } finally {
+                checkInInProgress = false;
+                if (button) button.disabled = false;
             }
-
-            if (bosIndex === -1) {
-                alert('Tebrikler! Bu paketteki tüm seanslarınızı tamamladınız. Lütfen yeni paket yükletin.');
-                return;
-            }
-
-            // Bugünün tarih ve saatini formatla
-            const now = new Date();
-            const formatted = `${now.getDate()} ${now.toLocaleString('tr-TR', { month: 'short' })} ${now.getFullYear()} - ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} (QR)`;
-
-            sessionDates[bosIndex] = formatted;
-
-            const { error } = await supabaseClient
-                .from('uyeler')
-                .update({ session_dates: JSON.stringify(sessionDates) })
-                .eq('id', currentLoggedInUye.id);
-
-            if (error) {
-                alert('Check-In yapılırken hata oluştu: ' + error.message);
-                return;
-            }
-
-            currentLoggedInUye.session_dates = sessionDates;
-            alert(`Harika! ${bosIndex + 1}. seansınız başarıyla onaylandı (Check-In Tamam). Osu! 🥋`);
-            await loadUyeler();
-            renderOgrenciPaneli();
         }
 
-        function openSozlesmeModal() { document.getElementById('sozlesme-modal').classList.remove('hidden'); }
-        function closeSozlesmeModal() { document.getElementById('sozlesme-modal').classList.add('hidden'); }
+        function openSozlesmeModal() {
+            pendingAgreementUyeId = null;
+            document.getElementById('sozlesme-onay').checked = false;
+            document.getElementById('sozlesme-kabul-btn').disabled = true;
+            document.getElementById('sozlesme-modal').classList.remove('hidden');
+        }
+        function closeSozlesmeModal() {
+            document.getElementById('sozlesme-modal').classList.add('hidden');
+            if (pendingAgreementUyeId !== null) {
+                currentLoggedInUye = null;
+                pendingAgreementUyeId = null;
+            }
+        }
+        async function sozlesmeyiKabulEt() {
+            if (!document.getElementById('sozlesme-onay').checked) {
+                alert('Devam etmek için sözleşmeyi kabul etmelisiniz.');
+                return;
+            }
+            if (pendingAgreementUyeId === null || !currentLoggedInUye) {
+                alert('Onayı kaydetmek için önce öğrenci numarasıyla giriş yapın.');
+                return;
+            }
+            const acceptedAt = new Date().toISOString();
+            const { data, error } = await supabaseClient
+                .from('uyeler')
+                .update({ sozlesme_kabul_edildi: true, sozlesme_kabul_tarihi: acceptedAt })
+                .eq('id', pendingAgreementUyeId)
+                .select('*')
+                .maybeSingle();
+            if (error) {
+                alert('Sözleşme onayı kaydedilemedi: ' + error.message + '\nSupabase uyeler tablosuna sozlesme_kabul_edildi ve sozlesme_kabul_tarihi alanlarını ekleyin.');
+                return;
+            }
+            if (!data) {
+                alert('Sözleşme onayı kaydedilemedi. Supabase UPDATE iznini/RLS politikasını kontrol edin.');
+                return;
+            }
+            currentLoggedInUye = data;
+            const index = allUyeler.findIndex(u => String(u.id) === String(data.id));
+            if (index >= 0) allUyeler[index] = data;
+            pendingAgreementUyeId = null;
+            document.getElementById('sozlesme-modal').classList.add('hidden');
+            showOgrenciPanel();
+        }
 
         // --- ÜYELER ---
         async function loadUyeler() {
@@ -718,10 +788,30 @@
         }
 
         async function deleteUye(id) {
-            if(!confirm('Bu sporcuyu silmek istediğinize emin misiniz?')) return;
-            const { error } = await supabaseClient.from('uyeler').delete().eq('id', id);
-            if (error) { alert('Silme hatası: ' + error.message); return; }
-            loadData();
+            if (!supabaseClient) { alert('Veritabanı bağlantısı yok.'); return; }
+            if (!confirm('Bu sporcuyu kalıcı olarak silmek istediğinize emin misiniz?')) return;
+
+            const { data, error } = await supabaseClient
+                .from('uyeler')
+                .delete()
+                .eq('id', id)
+                .select('id')
+                .maybeSingle();
+
+            if (error) {
+                alert('Üye silinemedi: ' + error.message + '\nSupabase DELETE iznini ve RLS politikasını kontrol edin.');
+                return;
+            }
+            if (!data) {
+                alert('Üye silinmedi. Kayıt bulunamadı veya Supabase RLS/DELETE izni engelliyor.');
+                return;
+            }
+            if (currentLoggedInUye && String(currentLoggedInUye.id) === String(id)) {
+                currentLoggedInUye = null;
+                document.getElementById('ogrenci-detay-alani').classList.add('hidden');
+            }
+            await loadData();
+            alert('Üye kaydı silindi. Eski kasa hareketleri korunmuştur.');
         }
 
         async function saveUye(e) {
