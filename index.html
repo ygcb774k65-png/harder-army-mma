@@ -55,19 +55,8 @@
             <button onclick="saveConfig()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 rounded-lg transition">Bağlantıyı Kaydet</button>
         </div>
 
-        <section id="admin-auth-box" class="bg-gradient-to-br from-zinc-900 to-black border border-red-900/50 rounded-2xl p-6 max-w-md mx-auto shadow-xl shadow-red-950/20">
-            <div class="text-center mb-5"><img src="harder-army-icon.jpg" alt="Harder Army MMA" class="w-16 h-16 rounded-2xl mx-auto mb-3 border border-red-800/70"><h2 class="text-lg font-black text-red-500">YÖNETİCİ GİRİŞİ</h2><p class="text-xs text-gray-400 mt-1">Üye ve kasa paneli yalnızca yetkili yöneticilere açıktır.</p></div>
-            <form onsubmit="adminGirisYap(event)" class="space-y-3">
-                <input id="admin-email" type="email" autocomplete="username" placeholder="Yönetici e-posta adresi" required class="w-full bg-black border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600">
-                <input id="admin-password" type="password" autocomplete="current-password" placeholder="Şifre" required class="w-full bg-black border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600">
-                <button id="admin-login-button" type="submit" class="w-full bg-red-700 hover:bg-red-600 text-white text-xs font-bold py-3 rounded-xl transition"><i class="fa-solid fa-lock mr-1.5"></i>Güvenli Yönetici Girişi</button>
-                <p id="admin-auth-message" class="text-[11px] text-center text-gray-500" aria-live="polite">Yönetici hesabı Supabase Auth üzerinden oluşturulmalıdır.</p>
-            </form>
-            <button id="admin-logout-button" onclick="adminCikisYap()" class="hidden w-full mt-3 bg-zinc-800 hover:bg-zinc-700 text-gray-200 text-xs font-bold py-2.5 rounded-xl">Çıkış Yap</button>
-        </section>
-
         <!-- ANA GÖRÜNÜM 1: YÖNETİM PANELİ -->
-        <div id="view-yonetim" class="space-y-6 hidden">
+        <div id="view-yonetim" class="space-y-6">
             <!-- İstatistik Özet Kartları -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
@@ -178,20 +167,16 @@
                 <div class="absolute -top-24 -right-16 w-56 h-56 bg-red-700/10 blur-3xl rounded-full pointer-events-none"></div>
                 <div class="relative flex justify-center pt-1"><img src="harder-army-icon.jpg" alt="Harder Army MMA" class="w-20 h-20 rounded-2xl border border-red-800/70 shadow-xl shadow-red-950/50"></div>
                 <div class="text-center space-y-1">
-                    <h2 class="text-lg font-black tracking-wide text-red-500">SPORCU ALANI</h2>
-                    <p class="text-xs text-gray-400">Antrenman takibin ve salon check-in işlemlerin tek yerde.</p>
+                    <h2 class="text-lg font-black tracking-wide text-red-500">SALON GİRİŞİ & CHECK-IN</h2>
+                    <p class="text-xs text-gray-400">Telefon numaranızı girerek salon girişinizi yapabilir ve seanslarınızı takip edebilirsiniz.</p>
                 </div>
                 <div class="relative space-y-3">
-                    <div class="rounded-xl border border-amber-800/50 bg-amber-950/30 p-3 text-left">
-                        <p class="text-xs font-bold text-amber-300"><i class="fa-solid fa-shield-halved mr-1.5"></i>Güvenli giriş kurulumu gerekiyor</p>
-                        <p class="text-[11px] leading-relaxed text-gray-400 mt-1">Telefon numarası tek başına kimlik doğrulamaz. Üye bilgilerini korumak için doğrulamalı giriş etkinleştirilene kadar öğrenci hesabı kilitli.</p>
-                    </div>
                     <div>
-                        <label class="block text-gray-400 text-xs mb-1">Telefon Numarası</label>
-                        <input type="tel" id="ogrenci-telefon-input" placeholder="05xxxxxxxx" class="w-full bg-black border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600">
+                        <label class="block text-gray-400 text-xs mb-1">Telefon Numaranız</label>
+                        <input type="tel" id="ogrenci-telefon-input" placeholder="05xxxxxxxxxx" class="w-full bg-black border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600">
                     </div>
-                    <button onclick="ogrenciGirisYap()" class="w-full bg-zinc-700 text-gray-300 text-xs font-bold py-3 rounded-xl cursor-not-allowed" aria-disabled="true">
-                        <i class="fa-solid fa-lock mr-1.5"></i> Güvenli giriş bekleniyor
+                    <button onclick="ogrenciGirisYap()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-red-950/50">
+                        Giriş Yap & Seanslarımı Gör
                     </button>
                     <div class="text-center pt-2">
                         <button onclick="openSozlesmeModal()" class="text-[11px] text-gray-400 hover:text-red-400 underline transition">
@@ -455,8 +440,6 @@
         let checkInInProgress = false;
         let attendanceQrScanner = null;
         let attendanceScanBusy = false;
-        let isAdminSession = false;
-        let authStateSubscription = null;
 
         function escapeHtml(value) {
             return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
@@ -474,17 +457,10 @@
 
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const isStudentLink = urlParams.get('view') === 'ogrenci';
             document.getElementById('sb-url').value = SUPABASE_URL;
             document.getElementById('sb-key').value = SUPABASE_PUBLIC_KEY;
-            if (isStudentLink) {
-                // Clear any administrator session left on a shared gym device.
-                localStorage.removeItem('sb-igbctnhpljcklhgmuxrg-auth-token');
-                switchMainView('ogrenci');
-                // Student QR links must not fetch the admin member or cash tables.
-                return;
-            }
             initSupabase(SUPABASE_URL, SUPABASE_PUBLIC_KEY);
+            if (urlParams.get('view') === 'ogrenci') switchMainView('ogrenci');
         };
 
         function toggleSetup() { document.getElementById('setup-box').classList.toggle('hidden'); }
@@ -508,61 +484,14 @@
             try {
                 supabaseClient = window.supabase.createClient(url, key);
                 document.getElementById('setup-box').classList.add('hidden');
-                if (authStateSubscription?.unsubscribe) authStateSubscription.unsubscribe();
-                const authListener = supabaseClient.auth.onAuthStateChange((_event, session) => {
-                    setTimeout(() => refreshAdminAccess(session), 0);
-                });
-                authStateSubscription = authListener.data.subscription;
-                supabaseClient.auth.getSession().then(({ data }) => refreshAdminAccess(data.session));
+                loadData();
             } catch (e) { alert('Bağlantı hatası: ' + e.message); }
         }
 
         async function loadData() {
-            if (!supabaseClient || !isAdminSession) return;
+            if (!supabaseClient) return;
             await loadUyeler();
             await loadKasa();
-        }
-
-        async function refreshAdminAccess(session) {
-            isAdminSession = false;
-            document.getElementById('view-yonetim').classList.add('hidden');
-            document.getElementById('admin-logout-button').classList.add('hidden');
-            document.getElementById('admin-auth-box').classList.remove('hidden');
-            if (!session || !supabaseClient) return;
-            const { data, error } = await supabaseClient.rpc('is_admin');
-            if (error || data !== true) {
-                document.getElementById('admin-auth-message').innerText = 'Bu hesap yönetici yetkisine sahip değil. Yetkili hesapla giriş yapın.';
-                await supabaseClient.auth.signOut();
-                return;
-            }
-            isAdminSession = true;
-            document.getElementById('admin-auth-box').classList.add('hidden');
-            document.getElementById('view-yonetim').classList.remove('hidden');
-            document.getElementById('admin-logout-button').classList.remove('hidden');
-            await loadData();
-        }
-
-        async function adminGirisYap(event) {
-            event.preventDefault();
-            if (!supabaseClient) { document.getElementById('admin-auth-message').innerText = 'Veritabanı bağlantısı kurulamadı.'; return; }
-            const button = document.getElementById('admin-login-button');
-            const message = document.getElementById('admin-auth-message');
-            button.disabled = true; message.innerText = 'Giriş doğrulanıyor…';
-            const { error } = await supabaseClient.auth.signInWithPassword({
-                email: document.getElementById('admin-email').value.trim(),
-                password: document.getElementById('admin-password').value
-            });
-            button.disabled = false;
-            if (error) message.innerText = 'Giriş başarısız. E-posta ve şifreyi kontrol edin.';
-            else message.innerText = 'Yetki kontrol ediliyor…';
-        }
-
-        async function adminCikisYap() {
-            isAdminSession = false;
-            if (supabaseClient) await supabaseClient.auth.signOut();
-            document.getElementById('admin-password').value = '';
-            document.getElementById('admin-auth-message').innerText = 'Güvenli şekilde çıkış yapıldı.';
-            await refreshAdminAccess(null);
         }
 
         // --- GÖRÜNÜM VE SEKME GEÇİŞLERİ ---
@@ -572,19 +501,14 @@
             const btnOg = document.getElementById('btn-view-ogrenci');
 
             if (view === 'ogrenci') {
-                if (isAdminSession && supabaseClient) adminCikisYap();
                 vYonetim.classList.add('hidden');
                 vOgrenci.classList.remove('hidden');
-                document.getElementById('admin-auth-box').classList.add('hidden');
                 document.getElementById('btn-setup').classList.add('hidden');
-                btnOg.classList.add('hidden');
                 btnOg.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> Yönetici Paneli';
                 btnOg.setAttribute('onclick', "switchMainView('yonetim')");
             } else {
                 vYonetim.classList.remove('hidden');
                 vOgrenci.classList.add('hidden');
-                if (!isAdminSession) vYonetim.classList.add('hidden');
-                document.getElementById('admin-auth-box').classList.toggle('hidden', isAdminSession);
                 document.getElementById('btn-setup').classList.remove('hidden');
                 btnOg.classList.remove('hidden');
                 btnOg.innerHTML = '<i class="fa-solid fa-user mr-1"></i> Öğrenci Girişi';
@@ -633,8 +557,6 @@
 
         // --- ÖĞRENCİ GİRİŞ VE CHECK-IN MANTIĞI ---
         async function ogrenciGirisYap() {
-            alert('Öğrenci girişi güvenli kimlik doğrulaması etkinleştirilene kadar kapalı. Sadece telefon numarasıyla giriş, başka üyelerin bilgilerini korumaz.');
-            return;
             if (!supabaseClient) { alert('Veritabanı bağlantısı kurulamadı.'); return; }
             const tel = document.getElementById('ogrenci-telefon-input').value.trim();
             const temizTel = normalizePhone(tel);
@@ -736,7 +658,6 @@
         }
 
         async function ogrenciCheckInYap() {
-            if (!currentLoggedInUye) { alert('Ders işlemek için güvenli öğrenci girişi gerekir.'); return; }
             if (!currentLoggedInUye || checkInInProgress) return;
             if (!supabaseClient) { alert('Veritabanı bağlantısı yok.'); return; }
 
