@@ -152,32 +152,40 @@
         </div>
 
         <!-- ANA GÖRÜNÜM 2: ÖĞRENCİ GİRİŞ & CHECK-IN EKRANI -->
-        <div id="view-ogrenci" class="space-y-6 hidden">
-            <div class="bg-zinc-900 border border-red-900/50 rounded-2xl p-6 max-w-md mx-auto shadow-2xl space-y-4">
-                <div class="text-center space-y-1">
-                    <h2 class="text-lg font-black text-red-500">SALON GİRİŞİ & CHECK-IN</h2>
-                    <p class="text-xs text-gray-400">Telefon numaranızı girerek salona giriş yoklamanızı yapabilir ve seanslarınızı takip edebilirsiniz.</p>
-                </div>
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-gray-400 text-xs mb-1">Telefon Numarası</label>
-                        <input type="tel" id="ogrenci-telefon-input" placeholder="05xxxxxxxx" class="w-full bg-black border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600">
-                    </div>
-                    <button onclick="ogrenciGirisYap()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-red-950/50">
-                        Giriş Yap & Seanslarımı Gör
-                    </button>
-                    <div class="text-center pt-2">
-                        <button onclick="openSozlesmeModal()" class="text-[11px] text-gray-400 hover:text-red-400 underline transition">
-                            <i class="fa-solid fa-file-contract mr-1"></i> Üyelik ve Salon Sözleşmesi / Kuralları
-                        </button>
-                    </div>
-                </div>
-                <div class="pt-2 text-center">
-                    <button onclick="switchMainView('yonetim')" class="text-xs text-zinc-500 hover:text-gray-300 transition">
-                        <i class="fa-solid fa-arrow-left mr-1"></i> Yönetici Paneline Geri Dön
-                    </button>
-                </div>
-            </div>
+        // --- ÖĞRENCİ GİRİŞ VE CHECK-IN MANTIĞI ---
+        function ogrenciGirisYap() {
+            let tel = document.getElementById('ogrenci-telefon-input').value.trim();
+            if (!tel) { alert('Lütfen telefon numaranızı girin!'); return; }
+
+            console.log("Sistemdeki Toplam Üye Sayısı:", allUyeler.length);
+            console.log("Üye Listesi Detayı:", allUyeler);
+
+            if (allUyeler.length === 0) {
+                alert('DİKKAT: Supabase veritabanından hiç üye yüklenemedi veya tablo boş! Lütfen önce Yönetici Paneline geçip en az 1 üye kaydedin veya Supabase API bağlantınızı kontrol edin.');
+                return;
+            }
+
+            const temizTel = tel.replace(/\D/g, '');
+            if (temizTel.length < 10) {
+                alert('Lütfen geçerli bir telefon numarası girin!');
+                return;
+            }
+
+            const ogrenci = allUyeler.find(u => {
+                if (!u.telefon) return false;
+                const dbTel = u.telefon.replace(/\D/g, '');
+                return dbTel.slice(-10) === temizTel.slice(-10);
+            });
+
+            if (!ogrenci) {
+                alert(`Supabase'de ${allUyeler.length} adet üye var ancak "${tel}" numarası ile eşleşen kimse bulunamadı! Yönetim panelindeki telefon numarasıyla aynı olduğundan emin olun.`);
+                return;
+            }
+
+            currentLoggedInUye = ogrenci;
+            renderOgrenciPaneli();
+            document.getElementById('ogrenci-detay-alani').classList.remove('hidden');
+        }
 
             <!-- Öğrenci Profil Bilgi ve Seans Sonuç Alanı -->
             <div id="ogrenci-detay-alani" class="hidden space-y-4 max-w-2xl mx-auto">
