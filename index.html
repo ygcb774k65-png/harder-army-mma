@@ -1,1153 +1,1345 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harder Army MMA - Yönetim ve Öğrenci Paneli</title>
-    <meta name="theme-color" content="#09090b">
-    <link rel="icon" type="image/jpeg" href="harder-army-icon.jpg">
-    <link rel="apple-touch-icon" href="harder-army-icon.jpg">
-    <link rel="manifest" href="manifest.webmanifest">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- QR Kod Oluşturma Kütüphanesi -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harder Army MMA - Yönetim ve Öğrenci Paneli</title>
+<meta name="theme-color" content="#09090b">
+<link rel="icon" type="image/jpeg" href="harder-army-icon.jpg">
+<link rel="apple-touch-icon" href="harder-army-icon.jpg">
+<link rel="manifest" href="manifest.webmanifest">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- QR Kod Oluşturma Kütüphanesi -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-black text-gray-100 font-sans min-h-screen pb-20">
 
-    <!-- Header / Navbar -->
-    <header class="bg-zinc-950 border-b border-red-900/40 p-4 sticky top-0 z-50 shadow-lg">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-3.5">
-                <div class="relative w-11 h-11 rounded-xl border border-red-600/40 flex items-center justify-center shadow-xl shadow-red-950/30 overflow-hidden group">
-                    <img src="harder-army-icon.jpg" alt="Harder Army MMA" class="w-full h-full object-cover group-hover:scale-110 transition duration-300">
-                </div>
-                <div>
-                    <h1 class="text-xl font-extrabold tracking-wider text-red-600 leading-none">HARDER ARMY MMA</h1>
-                    <p class="text-[10px] text-gray-400 font-medium tracking-widest mt-0.5">BAHÇEŞEHİR MMA</p>
-                </div>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="switchMainView('ogrenci')" id="btn-view-ogrenci" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-red-400 px-3 py-1.5 rounded-lg border border-red-900/40 transition font-bold">
-                    <i class="fa-solid fa-user mr-1"></i> Öğrenci Girişi
-                </button>
-                <button id="btn-setup" onclick="toggleSetup()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-gray-400 px-3 py-1.5 rounded-lg border border-zinc-800 transition">
-                    <i class="fa-solid fa-gear mr-1"></i> Ayarlar
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <div class="max-w-5xl mx-auto p-4 space-y-6">
-
-        <!-- Supabase Bağlantı Ayar Alanı -->
-        <div id="setup-box" class="bg-zinc-900 border border-red-900/60 p-4 rounded-xl hidden shadow-xl">
-            <div class="flex justify-between items-center mb-2">
-                <h3 class="text-sm font-bold text-red-500">Supabase API Ayarları</h3>
-                <button onclick="toggleSetup()" class="text-gray-400 text-xs"><i class="fa-solid fa-xmark text-base"></i></button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                <input type="text" id="sb-url" placeholder="https://xyz.supabase.co" class="bg-black border border-zinc-800 p-2.5 rounded-lg text-xs text-white outline-none focus:border-red-600">
-                <input type="text" id="sb-key" placeholder="sb_publishable_..." class="bg-black border border-zinc-800 p-2.5 rounded-lg text-xs text-white outline-none focus:border-red-600">
-            </div>
-            <button onclick="saveConfig()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 rounded-lg transition">Bağlantıyı Kaydet</button>
-        </div>
-
-        <!-- ANA GÖRÜNÜM 1: YÖNETİM PANELİ -->
-        <div id="view-yonetim" class="space-y-6">
-            <!-- İstatistik Özet Kartları -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
-                    <p class="text-gray-400 text-[11px] font-medium">Aktif Sporcu</p>
-                    <p id="stat-aktif" class="text-2xl font-black text-white mt-1">0</p>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
-                    <p class="text-gray-400 text-[11px] font-medium">Bitişi Yaklaşan</p>
-                    <p id="stat-biten" class="text-2xl font-black text-yellow-500 mt-1">0</p>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
-                    <p class="text-gray-400 text-[11px] font-medium">Kasa Bakiyesi</p>
-                    <p id="stat-kasa" class="text-2xl font-black text-green-500 mt-1">₺0</p>
-                </div>
-                <div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
-                    <p class="text-gray-400 text-[11px] font-medium">Toplam Kayıt</p>
-                    <p id="stat-toplam" class="text-2xl font-black text-gray-300 mt-1">0</p>
-                </div>
-            </div>
-
-            <!-- Sekme Butonları -->
-            <div class="flex bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs font-bold">
-                <button onclick="switchTab('uyeler')" id="tab-uyeler" class="flex-1 py-2.5 rounded-lg bg-red-600 text-white transition">
-                    <i class="fa-solid fa-users mr-1.5"></i> Üyeler & Seans Takibi
-                </button>
-                <button onclick="switchTab('kasa')" id="tab-kasa" class="flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition">
-                    <i class="fa-solid fa-wallet mr-1.5"></i> Kasa / Gelir-Gider
-                </button>
-            </div>
-
-            <!-- SEKME 1: ÜYE YÖNETİMİ -->
-            <div id="sec-uyeler" class="space-y-4">
-                <div class="flex flex-col sm:flex-row justify-between gap-3">
-                    <input type="text" id="uye-ara" oninput="filterUyeler()" placeholder="Sporcu Ara (Ad, Telefon)..." class="bg-zinc-900 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600 flex-1">
-                    <div class="flex gap-2">
-                        <button onclick="openQrModal()" class="bg-zinc-800 hover:bg-zinc-700 text-yellow-400 text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2 border border-zinc-700 transition">
-                            <i class="fa-solid fa-qrcode"></i> Salon QR Kodu
-                        </button>
-                        <button onclick="openUyeModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-950/40 transition">
-                            <i class="fa-solid fa-user-plus"></i> Yeni Üye Ekle
-                        </button>
-                    </div>
-                </div>
-
-                <div class="bg-zinc-900 rounded-xl border border-zinc-800/80 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs text-gray-300">
-                            <thead class="bg-zinc-950 text-gray-400 font-semibold border-b border-zinc-800">
-                                <tr>
-                                    <th class="p-3.5">Sporcu</th>
-                                    <th class="p-3.5">İletişim</th>
-                                    <th class="p-3.5">Branş / Paket</th>
-                                    <th class="p-3.5">Seans Takibi</th>
-                                    <th class="p-3.5">Ücret</th>
-                                    <th class="p-3.5">Bitiş Tarihi</th>
-                                    <th class="p-3.5">Durum</th>
-                                    <th class="p-3.5 text-right">İşlem</th>
-                                </tr>
-                            </thead>
-                            <tbody id="uye-listesi" class="divide-y divide-zinc-800/50">
-                                <tr><td colspan="8" class="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SEKME 2: KASA -->
-            <div id="sec-kasa" class="space-y-4 hidden">
-                <div class="flex justify-between items-center">
-                    <h2 class="text-sm font-bold text-gray-300">Kasa Hareketleri (Gelir & Gider)</h2>
-                    <button onclick="openKasaModal()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition">
-                        <i class="fa-solid fa-plus"></i> Gelir / Gider Ekle
-                    </button>
-                </div>
-
-                <div class="bg-zinc-900 border border-zinc-800/80 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div><p class="text-xs font-bold text-gray-200">Aylık Kasa Arşivi</p><p class="text-[11px] text-gray-500 mt-1">Hareketler tarihlerine göre aylarına kaydedilir. Yeni ay otomatik açılır; geçmiş aylar korunur.</p></div>
-                    <label class="text-xs text-gray-400 flex items-center gap-2">Görüntülenen ay<select id="kasa-ay-sec" onchange="renderKasaAy()" class="bg-black border border-zinc-700 p-2 rounded-lg text-white outline-none focus:border-green-600"></select></label>
-                </div>
-                <div id="kasa-ay-ozet" class="text-xs text-gray-400"></div>
-
-                <div class="bg-zinc-900 rounded-xl border border-zinc-800/80 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs text-gray-300">
-                            <thead class="bg-zinc-950 text-gray-400 font-semibold border-b border-zinc-800">
-                                <tr>
-                                    <th class="p-3.5">Tarih</th>
-                                    <th class="p-3.5">Tür</th>
-                                    <th class="p-3.5">Açıklama</th>
-                                    <th class="p-3.5">Kategori</th>
-                                    <th class="p-3.5 text-right">Tutar</th>
-                                    <th class="p-3.5 text-right">İşlem</th>
-                                </tr>
-                            </thead>
-                            <tbody id="kasa-listesi" class="divide-y divide-zinc-800/50">
-                                <tr><td colspan="6" class="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ANA GÖRÜNÜM 2: ÖĞRENCİ GİRİŞ & CHECK-IN EKRANI -->
-        <div id="view-ogrenci" class="space-y-6 hidden">
-            <div class="relative overflow-hidden bg-gradient-to-b from-zinc-900 via-zinc-900 to-black border border-red-900/50 rounded-2xl p-6 max-w-md mx-auto shadow-2xl shadow-red-950/20 space-y-4">
-                <div class="absolute -top-24 -right-16 w-56 h-56 bg-red-700/10 blur-3xl rounded-full pointer-events-none"></div>
-                <div class="relative flex justify-center pt-1"><img src="harder-army-icon.jpg" alt="Harder Army MMA" class="w-20 h-20 rounded-2xl border border-red-800/70 shadow-xl shadow-red-950/50"></div>
-                <div class="text-center space-y-1">
-                    <h2 class="text-lg font-black tracking-wide text-red-500">SALON GİRİŞİ & CHECK-IN</h2>
-                    <p class="text-xs text-gray-400">Telefon numaranızı girerek salon girişinizi yapabilir ve seanslarınızı takip edebilirsiniz.</p>
-                </div>
-                <div class="relative space-y-3">
-                    <div>
-                        <label class="block text-gray-400 text-xs mb-1">Telefon Numaranız</label>
-                        <input type="tel" id="ogrenci-telefon-input" placeholder="05xxxxxxxxxx" class="w-full bg-black border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600">
-                    </div>
-                    <button onclick="ogrenciGirisYap()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-red-950/50">
-                        Giriş Yap & Seanslarımı Gör
-                    </button>
-                    <div class="text-center pt-2">
-                        <button onclick="openSozlesmeModal()" class="text-[11px] text-gray-400 hover:text-red-400 underline transition">
-                            <i class="fa-solid fa-file-contract mr-1"></i> Üyelik ve Salon Sözleşmesi / Kuralları
-                        </button>
-                    </div>
-                </div>
-                <div class="pt-2 text-center">
-                    <button onclick="switchMainView('yonetim')" class="text-xs text-zinc-500 hover:text-gray-300 transition">
-                        <i class="fa-solid fa-arrow-left mr-1"></i> Yönetici Paneline Geri Dön
-                    </button>
-                </div>
-            </div>
-
-            <!-- Öğrenci Profil Bilgi ve Seans Sonuç Alanı -->
-            <div id="ogrenci-detay-alani" class="hidden space-y-4 max-w-2xl mx-auto">
-                <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <span id="og-brans-badge" class="bg-red-600/20 text-red-500 border border-red-900/50 px-2.5 py-1 rounded-full text-[10px] font-bold">Branş</span>
-                        <h3 id="og-ad-soyad" class="text-lg font-black text-white mt-1.5">Sporcu Adı</h3>
-                        <p class="text-xs text-gray-400 mt-0.5">Bitiş Tarihi: <strong id="og-bitis" class="text-yellow-400">-</strong></p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="bg-black/60 border border-zinc-800 p-3 rounded-xl text-center min-w-[120px]">
-                            <p class="text-[10px] text-gray-400">Kalan / Toplam</p>
-                            <p class="text-sm font-black text-green-400 mt-0.5"><span id="og-kalan">0</span> / <span id="og-toplam">12</span></p>
-                        </div>
-                        <button onclick="ogrenciCheckInYap()" class="bg-green-600 hover:bg-green-700 text-white font-bold p-3.5 rounded-xl text-xs flex flex-col items-center justify-center gap-1 shadow-lg transition">
-                            <i class="fa-solid fa-qrcode text-base"></i>
-                            <span>Check-In Yap</span>
-                        </button>
-                        <button onclick="startAttendanceQrScan()" class="bg-yellow-600 hover:bg-yellow-700 text-black font-bold p-3.5 rounded-xl text-xs flex flex-col items-center justify-center gap-1 shadow-lg transition">
-                            <i class="fa-solid fa-camera text-base"></i>
-                            <span>QR Tara</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-xl space-y-3">
-                    <h4 class="text-xs font-bold text-gray-300"><i class="fa-solid fa-calendar-days mr-1.5 text-red-500"></i> Seans Geçmişim & Randevularım</h4>
-                    <div id="ogrenci-seans-listesi" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                        <!-- Dinamik Seans Kutuları -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- MODAL: UYGULAMA İÇİ SALON QR TARAMA -->
-    <div id="attendance-qr-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[70] flex items-center justify-center p-4 hidden">
-        <div class="bg-zinc-900 border border-yellow-700/60 w-full max-w-sm rounded-2xl p-5 text-center space-y-4">
-            <div class="flex justify-between items-center"><h3 class="text-sm font-bold text-yellow-400">Salon QR Kodunu Tara</h3><button onclick="stopAttendanceQrScan()" class="text-gray-300 text-xl" aria-label="Tarayıcıyı kapat">×</button></div>
-            <p id="attendance-qr-status" class="text-xs text-gray-400">Kamerayı salon QR koduna yöneltin.</p>
-            <div id="attendance-qr-reader" class="overflow-hidden rounded-xl"></div>
-            <button onclick="stopAttendanceQrScan()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-xl text-xs font-bold">Vazgeç</button>
-        </div>
-    </div>
-
-    <!-- MODAL: QR KOD DUVAR PENCERESİ -->
-    <div id="qr-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-2xl p-6 text-center space-y-4 shadow-2xl">
-            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
-                <h3 class="text-sm font-bold text-yellow-400"><i class="fa-solid fa-qrcode mr-1"></i> Salon Giriş QR Kodu</h3>
-                <button onclick="closeQrModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <p class="text-xs text-gray-400">Öğrenciler bu QR kodu telefon kamerasıyla okutarak doğrudan giriş ekranına ulaşabilirler.</p>
-            <div class="bg-white p-4 rounded-xl inline-block shadow-inner mx-auto" id="qrcode-container"></div>
-            <div class="pt-2">
-                <button onclick="closeQrModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 py-2.5 rounded-xl text-xs font-bold transition">Kapat</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL 1: YENİ ÜYE EKLE / DÜZENLE -->
-    <div id="uye-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
-                <h3 class="text-base font-bold text-red-500" id="modal-title">Yeni Sporcu Kaydı</h3>
-                <button onclick="closeUyeModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <form id="uye-form" onsubmit="saveUye(event)" class="space-y-3 text-xs">
-                <input type="hidden" id="uye-id">
-                <div>
-                    <label class="block text-gray-400 mb-1">Ad Soyad *</label>
-                    <input type="text" id="m-ad" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">Telefon (Öğrenci Girişi İçin Gerekli) *</label>
-                    <input type="tel" id="m-tel" required placeholder="05xx xxx xx xx" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">Branş / Paket *</label>
-                    <select id="m-paket" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
-                        <option value="MMA Group">MMA Group</option>
-                        <option value="Boks">Boks</option>
-                        <option value="Kickboks / Muay Thai">Kickboks / Muay Thai</option>
-                        <option value="BJJ / Grappling">BJJ / Grappling</option>
-                        <option value="Güreş">Güreş</option>
-                        <option value="Özel Ders (PT)">Özel Ders (PT)</option>
-                        <option value="Düet Ders (2 Kişilik)">Düet Ders (2 Kişilik)</option>
-                        <option value="Grup PT / Small Group">Grup PT / Small Group</option>
-                        <option value="Çocuklar / Gençler MMA">Çocuklar / Gençler MMA</option>
-                        <option value="Kondisyon & Functional">Kondisyon & Functional</option>
-                    </select>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-gray-400 mb-1">Aylık Ücret (₺) *</label>
-                        <input type="number" id="m-ucret" required placeholder="1500" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
-                    </div>
-                    <div>
-                        <label class="block text-gray-400 mb-1">Toplam Ders Sayısı</label>
-                        <input type="number" id="m-toplam-ders" value="12" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">Üyelik Bitiş Tarihi *</label>
-                    <input type="date" id="m-bitis" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">Durum *</label>
-                    <select id="m-durum" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
-                        <option value="Aktif">Aktif</option>
-                        <option value="Bitişi Yaklaşan">Bitişi Yaklaşan</option>
-                        <option value="Pasif">Pasif</option>
-                    </select>
-                </div>
-                <div class="pt-2 flex gap-2">
-                    <button type="button" onclick="closeUyeModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-lg text-gray-300 font-bold transition">İptal</button>
-                    <button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 py-2.5 rounded-lg text-white font-bold transition">Kaydet</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL 2: SEANS TAKİP VE TARİH/SAAT SEÇİMİ -->
-    <div id="seans-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-zinc-900 border border-zinc-800 w-full max-w-lg rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
-            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
-                <h3 class="text-base font-bold text-yellow-400" id="seans-modal-title">Seans Takibi</h3>
-                <button onclick="closeSeansModal()" class="w-7 h-7 bg-red-600/20 text-red-500 rounded-full flex items-center justify-center hover:bg-red-600 hover:text-white transition">
-                    <i class="fa-solid fa-xmark text-sm"></i>
-                </button>
-            </div>
-            <div class="bg-zinc-800/60 p-3 rounded-xl border border-zinc-700/60 text-center text-xs text-gray-300 flex items-center justify-center gap-3">
-                <i class="fa-solid fa-clock text-green-500 text-lg"></i>
-                <span>Seansa tıklayarak özel tarih ve saat seçebilir, tamamlanan seansın zamanını ayarlayabilirsiniz.</span>
-            </div>
-            <div class="bg-zinc-950 p-2.5 rounded-xl text-center border border-zinc-800">
-                <span id="seans-modal-paket" class="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">Branş Paket</span>
-            </div>
-            <div id="seans-listesi-container" class="overflow-y-auto pr-1 space-y-3 flex-1 max-h-[45vh]"></div>
-            <div class="pt-2">
-                <button onclick="closeSeansModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-xl text-gray-300 font-bold text-xs transition">Kapat</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL 3: SEANS TARİH/SAAT GÜNCELLEME ALT PENCERESİ -->
-    <div id="seans-tarih-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-zinc-900 border border-yellow-500/40 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
-            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
-                <h3 class="text-sm font-bold text-yellow-400" id="tarih-modal-baslik">Seans Tarih ve Saatini Belirle</h3>
-                <button onclick="closeTarihModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-gray-400 mb-1">Ders Tarihi ve Saati *</label>
-                    <input type="datetime-local" id="secilen-tarih-saat" class="w-full bg-black border border-zinc-800 p-3 rounded-lg text-white outline-none focus:border-yellow-500">
-                </div>
-                <div class="flex gap-2 pt-2">
-                    <button type="button" onclick="seansiKaldir()" class="bg-red-950 hover:bg-red-900 text-red-400 px-3 py-2.5 rounded-lg font-bold transition">Yanlış İşlenen Dersi Sil</button>
-                    <button type="button" onclick="seansiKaydetOnayla()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-bold transition">Kaydet & Onayla</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL 4: KASA HAREKETİ EKLE -->
-    <div id="kasa-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl">
-            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
-                <h3 class="text-base font-bold text-green-500">Yeni Kasa Hareketi</h3>
-                <button onclick="closeKasaModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <form id="kasa-form" onsubmit="saveKasa(event)" class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-gray-400 mb-1">İşlem Türü *</label>
-                    <select id="k-tip" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
-                        <option value="Gelir">Gelir (Aidat / Ekipman Satışı vb.)</option>
-                        <option value="Gider">Gider (Kira / Fatura / Malzeme vb.)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-gray-400 mb-1">Açıklama / Başlık *</label>
-                    <input type="text" id="k-baslik" placeholder="Örn: Salon Kirası veya Ekipman Alımı" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-gray-400 mb-1">Tutar (₺) *</label>
-                        <input type="number" id="k-tutar" required placeholder="1000" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
-                    </div>
-                    <div>
-                        <label class="block text-gray-400 mb-1">Kategori</label>
-                        <select id="k-kategori" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
-                            <option value="Aidat">Aidat</option>
-                            <option value="Kira">Kira</option>
-                            <option value="Faturalar">Faturalar (Elektrik/Su/İnternet)</option>
-                            <option value="Malzeme / Ekipman">Malzeme / Ekipman</option>
-                            <option value="Eğitmen Ödemesi">Eğitmen Ödemesi</option>
-                            <option value="Diğer">Diğer</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="pt-2 flex gap-2">
-                    <button type="button" onclick="closeKasaModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-lg text-gray-300 font-bold transition">İptal</button>
-                    <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 py-2.5 rounded-lg text-white font-bold transition">İşlemi Kaydet</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL 5: ÜYELİK VE SALON SÖZLEŞMESİ -->
-    <div id="sozlesme-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-zinc-900 border border-red-900/60 w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
-            <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
-                <h3 class="text-sm font-bold text-red-500"><i class="fa-solid fa-file-contract mr-2"></i> HARDER ARMY MMA - ÜYELİK SÖZLEŞMESİ</h3>
-                <button onclick="closeSozlesmeModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="overflow-y-auto pr-2 space-y-3 text-xs text-gray-300 leading-relaxed">
-                <p><strong>1. TARAFLAR VE AMAÇ:</strong> İşbu sözleşme, Harder Army MMA (Bahçeşehir MMA) salonu ile salon hizmetlerinden faydalanan sporcu/üye arasında, dövüş sanatları ve kondisyon antrenmanları kurallarını belirlemek amacıyla düzenlenmiştir.</p>
-                <p><strong>2. SAĞLIK VE RİSK BEYANI:</strong> Üye, MMA, Boks, Kickboks ve Grappling gibi temaslı dövüş sanatlarının doğası gereği sakatlanma riskleri barındırdığını kabul eder. Üyenin antrenmanlara katılmasına mani kronik bir rahatsızlığı, kalp veya ortopedik engeli bulunmadığı varsayılır.</p>
-                <p><strong>3. PAKET VE SEANS KURALLARI:</strong> Satın alınan seans paketleri ve üyelikler belirlenen süre içinde kullanılmalıdır. Kullanılmayan veya hakkı düşen seanslar bir sonraki aya devretmez, iade veya nakit değişimi yapılamaz.</p>
-                <p><strong>4. SALON DİSİPLİNİ VE EKİPMAN:</strong> Antrenmanlarda dişlik, bandaj, eldiven ve kaval koruma gibi zorunlu kişisel koruyucu ekipmanların kullanımı mecburidir.</p>
-                <p class="text-center font-bold text-red-400 pt-2">Osu! Harder Army MMA ailesine hoş geldiniz.</p>
-            </div>
-            <div class="pt-2 border-t border-zinc-800 space-y-3">
-                <label class="flex items-start gap-2 text-xs text-gray-300">
-                    <input id="sozlesme-onay" type="checkbox" onchange="document.getElementById('sozlesme-kabul-btn').disabled = !this.checked" class="mt-0.5 accent-red-600">
-                    <span>Sözleşme ve salon kurallarını okudum, kabul ediyorum.</span>
-                </label>
-                <button id="sozlesme-kabul-btn" onclick="sozlesmeyiKabulEt()" disabled class="w-full bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-xl text-xs transition">Onayla ve Öğrenci Paneline Geç</button>
-                <button onclick="closeSozlesmeModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 font-bold py-2 rounded-xl text-xs">Kapat</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- JavaScript Uygulama Mantığı -->
-    <script>
-        const SUPABASE_URL = 'https://igbctnhpljcklhgmuxrg.supabase.co';
-        const SUPABASE_PUBLIC_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnYmN0bmhwbGpja2xoZ211eHJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MzA3NTYsImV4cCI6MjEwNzUwNjc1Nn0.Xi9-6Q1BD72F38efC6IEMCR4aPxPKlZBLu7-cl4WkX0';
-        let supabaseClient = null;
-        let allUyeler = [];
-        let uyeLoadError = null;
-        let allKasa = [];
-        let activeUyeForSeans = null;
-        let activeSeansIndex = null;
-        let currentLoggedInUye = null;
-        let pendingAgreementUyeId = null;
-        let checkInInProgress = false;
-        let attendanceQrScanner = null;
-        let attendanceScanBusy = false;
-
-        function escapeHtml(value) {
-            return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-        }
-        function localDateISO(date = new Date()) {
-            return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-        }
-        function normalizePhone(value) {
-            let digits = String(value || '').replace(/\D/g, '');
-            if (digits.startsWith('0090')) digits = digits.slice(4);
-            else if (digits.startsWith('90') && digits.length >= 12) digits = digits.slice(2);
-            if (digits.startsWith('0') && digits.length === 11) digits = digits.slice(1);
-            return digits;
-        }
-
-        window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            document.getElementById('sb-url').value = SUPABASE_URL;
-            document.getElementById('sb-key').value = SUPABASE_PUBLIC_KEY;
-            initSupabase(SUPABASE_URL, SUPABASE_PUBLIC_KEY);
-            if (urlParams.get('view') === 'ogrenci') switchMainView('ogrenci');
-        };
-
-        function toggleSetup() { document.getElementById('setup-box').classList.toggle('hidden'); }
-
-        function isClientSafeKey(key) {
-            if (key.startsWith('sb_publishable_')) return true;
-            try { return JSON.parse(atob(key.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).role === 'anon'; } catch (e) { return false; }
-        }
-
-        function saveConfig() {
-            let url = document.getElementById('sb-url').value.trim();
-            let key = document.getElementById('sb-key').value.trim();
-            if(!url || !key) { alert('Lütfen URL ve Key alanlarını doldurun!'); return; }
-            if (!isClientSafeKey(key)) { alert('Service role/secret anahtarını tarayıcıda kullanmayın. Publishable veya anon anahtar kullanın.'); return; }
-            localStorage.setItem('sb_url', url);
-            localStorage.setItem('sb_key', key);
-            initSupabase(url, key);
-        }
-
-        function initSupabase(url, key) {
-            try {
-                supabaseClient = window.supabase.createClient(url, key);
-                document.getElementById('setup-box').classList.add('hidden');
-                loadData();
-            } catch (e) { alert('Bağlantı hatası: ' + e.message); }
-        }
-
-        async function loadData() {
-            if (!supabaseClient) return;
-            await loadUyeler();
-            await loadKasa();
-        }
-
-        // --- GÖRÜNÜM VE SEKME GEÇİŞLERİ ---
-        function switchMainView(view) {
-            const vYonetim = document.getElementById('view-yonetim');
-            const vOgrenci = document.getElementById('view-ogrenci');
-            const btnOg = document.getElementById('btn-view-ogrenci');
-
-            if (view === 'ogrenci') {
-                vYonetim.classList.add('hidden');
-                vOgrenci.classList.remove('hidden');
-                document.getElementById('btn-setup').classList.add('hidden');
-                btnOg.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> Yönetici Paneli';
-                btnOg.setAttribute('onclick', "switchMainView('yonetim')");
-            } else {
-                vYonetim.classList.remove('hidden');
-                vOgrenci.classList.add('hidden');
-                document.getElementById('btn-setup').classList.remove('hidden');
-                btnOg.classList.remove('hidden');
-                btnOg.innerHTML = '<i class="fa-solid fa-user mr-1"></i> Öğrenci Girişi';
-                btnOg.setAttribute('onclick', "switchMainView('ogrenci')");
-            }
-        }
-
-        function switchTab(tab) {
-            const secUyeler = document.getElementById('sec-uyeler');
-            const secKasa = document.getElementById('sec-kasa');
-            const tabUyeler = document.getElementById('tab-uyeler');
-            const tabKasa = document.getElementById('tab-kasa');
-
-            if (tab === 'uyeler') {
-                secUyeler.classList.remove('hidden');
-                secKasa.classList.add('hidden');
-                tabUyeler.className = "flex-1 py-2.5 rounded-lg bg-red-600 text-white transition";
-                tabKasa.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
-            } else {
-                secUyeler.classList.add('hidden');
-                secKasa.classList.remove('hidden');
-                tabKasa.className = "flex-1 py-2.5 rounded-lg bg-green-600 text-white transition";
-                tabUyeler.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
-            }
-        }
-
-        // --- QR KOD YÖNETİCİ PENCERESİ ---
-        function openQrModal() {
-            if (typeof QRCode === 'undefined') { alert('QR kod kütüphanesi yüklenemedi.'); return; }
-            document.getElementById('qr-modal').classList.remove('hidden');
-            const container = document.getElementById('qrcode-container');
-            container.innerHTML = '';
-            
-            // Mevcut sayfa adresinin öğrenci görünümü linkini QR yap
-            const currentUrl = window.location.href.split('?')[0] + '?view=ogrenci';
-            new QRCode(container, {
-                text: currentUrl,
-                width: 180,
-                height: 180,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-        }
-        function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); }
-
-        // --- ÖĞRENCİ GİRİŞ VE CHECK-IN MANTIĞI ---
-        async function ogrenciGirisYap() {
-            if (!supabaseClient) { alert('Veritabanı bağlantısı kurulamadı.'); return; }
-            const tel = document.getElementById('ogrenci-telefon-input').value.trim();
-            const temizTel = normalizePhone(tel);
-            if (!temizTel) { alert('Lütfen telefon numaranızı girin!'); return; }
-
-            if (uyeLoadError) {
-                alert('Üye kayıtları veritabanından yüklenemedi: ' + uyeLoadError.message + '\nSupabase SELECT iznini ve RLS politikasını kontrol edin.');
-                return;
-            }
-            const ogrenci = allUyeler.find(u => normalizePhone(u.telefon) === temizTel);
-            if (!ogrenci) {
-                alert('Bu telefon numarasına ait kayıtlı üye bulunamadı. Numarayı yönetici kaydındaki telefonla kontrol edin.');
-                return;
-            }
-
-            currentLoggedInUye = ogrenci;
-            if (ogrenci.sozlesme_kabul_edildi !== true) {
-                pendingAgreementUyeId = ogrenci.id;
-                document.getElementById('sozlesme-onay').closest('label').classList.remove('hidden');
-                document.getElementById('sozlesme-kabul-btn').classList.remove('hidden');
-                document.getElementById('sozlesme-onay').checked = false;
-                document.getElementById('sozlesme-kabul-btn').disabled = true;
-                document.getElementById('sozlesme-modal').classList.remove('hidden');
-                return;
-            }
-            showOgrenciPanel();
-        }
-
-        function showOgrenciPanel() {
-            renderOgrenciPaneli();
-            document.getElementById('ogrenci-detay-alani').classList.remove('hidden');
-        }
-
-        function renderOgrenciPaneli() {
-            if (!currentLoggedInUye) return;
-            // Güncel veriyi allUyeler'den tekrar al
-            currentLoggedInUye = allUyeler.find(u => u.id === currentLoggedInUye.id) || currentLoggedInUye;
-
-            document.getElementById('og-ad-soyad').innerText = currentLoggedInUye.ad_soyad;
-            document.getElementById('og-brans-badge').innerText = currentLoggedInUye.paket;
-            document.getElementById('og-bitis').innerText = currentLoggedInUye.bitis_tarihi || '-';
-
-            const total = currentLoggedInUye.total_lessons || 12;
-            let sessionDates = [];
-            try { sessionDates = typeof currentLoggedInUye.session_dates === 'string' ? JSON.parse(currentLoggedInUye.session_dates) : (currentLoggedInUye.session_dates || []); } catch(e) { sessionDates = []; }
-            const completed = sessionDates.filter(d => d !== null && d !== undefined && d !== '').length;
-            const remaining = Math.max(0, total - completed);
-
-            document.getElementById('og-kalan').innerText = remaining;
-            document.getElementById('og-toplam').innerText = total;
-
-            const listContainer = document.getElementById('ogrenci-seans-listesi');
-            listContainer.innerHTML = '';
-
-            for (let i = 0; i < total; i++) {
-                const tarihStr = sessionDates[i];
-                const isCompleted = !!tarihStr;
-
-                listContainer.innerHTML += `
-                    <div class="flex flex-col items-center justify-center p-3 rounded-xl border text-center select-none ${isCompleted ? 'bg-zinc-800/80 border-green-500/50 shadow-md' : 'bg-black/60 border-zinc-800 opacity-60'}">
-                        <span class="text-xs font-bold ${isCompleted ? 'text-gray-200' : 'text-gray-400'} mb-1">${i + 1}. Seans</span>
-                        <div class="my-1">
-                            ${isCompleted 
-                                ? '<div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-black text-xs font-bold"><i class="fa-solid fa-check"></i></div>' 
-                                : '<div class="w-6 h-6 rounded-full border-2 border-zinc-700 bg-zinc-900"></div>'}
-                        </div>
-                        <span class="text-[9px] ${isCompleted ? 'text-green-400 font-semibold' : 'text-gray-500'} mt-1">
-                            ${isCompleted ? escapeHtml(tarihStr) : 'Bekliyor'}
-                        </span>
-                    </div>
-                `;
-            }
-        }
-
-        function isGymQrCode(value) {
-            try { const scanned = new URL(value); const current = new URL(window.location.href); return scanned.origin === current.origin && scanned.pathname === current.pathname && scanned.searchParams.get('view') === 'ogrenci'; } catch (e) { return false; }
-        }
-
-        async function startAttendanceQrScan() {
-            if (!currentLoggedInUye) { alert('Önce telefon numaranızla öğrenci girişi yapın.'); return; }
-            if (!supabaseClient) { alert('Veritabanı bağlantısı kurulamadı.'); return; }
-            if (typeof Html5Qrcode === 'undefined') { alert('QR tarama kütüphanesi yüklenemedi. Sayfayı yenileyip tekrar deneyin.'); return; }
-            attendanceScanBusy = false; document.getElementById('attendance-qr-status').innerText = 'Kamerayı salon QR koduna yöneltin.'; document.getElementById('attendance-qr-modal').classList.remove('hidden');
-            try {
-                attendanceQrScanner = new Html5Qrcode('attendance-qr-reader');
-                await attendanceQrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } }, async (decodedText) => {
-                    if (attendanceScanBusy) return;
-                    if (!isGymQrCode(decodedText)) { document.getElementById('attendance-qr-status').innerText = 'Bu salonun QR kodu değil. Salon giriş QR kodunu okutun.'; return; }
-                    attendanceScanBusy = true; document.getElementById('attendance-qr-status').innerText = 'QR doğrulandı, dersiniz işleniyor…';
-                    try { await stopAttendanceQrScan(); await ogrenciCheckInYap(); } finally { attendanceScanBusy = false; }
-                }, () => {});
-            } catch (error) { await stopAttendanceQrScan(); alert('Kamera açılamadı. Kamera izni verin ve siteyi HTTPS üzerinden açın. ' + (error?.message || '')); }
-        }
-
-        async function stopAttendanceQrScan() {
-            const scanner = attendanceQrScanner; attendanceQrScanner = null;
-            if (scanner) { try { if (scanner.isScanning) await scanner.stop(); } catch (e) {} try { scanner.clear(); } catch (e) {} }
-            document.getElementById('attendance-qr-modal').classList.add('hidden');
-        }
-
-        async function ogrenciCheckInYap() {
-            if (!currentLoggedInUye || checkInInProgress) return;
-            if (!supabaseClient) { alert('Veritabanı bağlantısı yok.'); return; }
-
-            const button = document.querySelector('#ogrenci-detay-alani button[onclick="ogrenciCheckInYap()"]');
-            checkInInProgress = true;
-            if (button) button.disabled = true;
-            try {
-                let sessionDates = [];
-                try {
-                    sessionDates = typeof currentLoggedInUye.session_dates === 'string'
-                        ? JSON.parse(currentLoggedInUye.session_dates)
-                        : (currentLoggedInUye.session_dates || []);
-                } catch (e) { sessionDates = []; }
-
-                const total = Math.max(0, Math.min(100, Number(currentLoggedInUye.total_lessons) || 12));
-                let emptyIndex = -1;
-                for (let i = 0; i < total; i++) {
-                    if (!sessionDates[i]) { emptyIndex = i; break; }
-                }
-                if (emptyIndex === -1) {
-                    alert('Bu paketteki tüm seanslar tamamlandı. Lütfen yeni paket yükletin.');
-                    return;
-                }
-
-                const now = new Date();
-                const formatted = now.toLocaleString('tr-TR', {
-                    day: 'numeric', month: 'short', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                }) + ' (QR)';
-                sessionDates[emptyIndex] = formatted;
-
-                const { data, error } = await supabaseClient
-                    .from('uyeler')
-                    .update({ session_dates: JSON.stringify(sessionDates) })
-                    .eq('id', currentLoggedInUye.id)
-                    .select('*')
-                    .maybeSingle();
-                if (error) throw error;
-                if (!data) throw new Error('Kayıt güncellenmedi. Supabase UPDATE iznini/RLS politikasını kontrol edin.');
-
-                currentLoggedInUye = data;
-                const index = allUyeler.findIndex(u => String(u.id) === String(data.id));
-                if (index >= 0) allUyeler[index] = data;
-                alert('Seans girişiniz kaydedildi. Osu! 🥋');
-                renderOgrenciPaneli();
-            } catch (error) {
-                alert('Check-in yapılamadı: ' + error.message);
-            } finally {
-                checkInInProgress = false;
-                if (button) button.disabled = false;
-            }
-        }
-
-        function openSozlesmeModal() {
-            pendingAgreementUyeId = null;
-            document.getElementById('sozlesme-onay').closest('label').classList.add('hidden');
-            document.getElementById('sozlesme-kabul-btn').classList.add('hidden');
-            document.getElementById('sozlesme-onay').checked = false;
-            document.getElementById('sozlesme-kabul-btn').disabled = true;
-            document.getElementById('sozlesme-modal').classList.remove('hidden');
-        }
-        function closeSozlesmeModal() {
-            document.getElementById('sozlesme-modal').classList.add('hidden');
-            if (pendingAgreementUyeId !== null) {
-                currentLoggedInUye = null;
-                pendingAgreementUyeId = null;
-            }
-        }
-        async function sozlesmeyiKabulEt() {
-            if (!document.getElementById('sozlesme-onay').checked) {
-                alert('Devam etmek için sözleşmeyi kabul etmelisiniz.');
-                return;
-            }
-            if (pendingAgreementUyeId === null || !currentLoggedInUye) {
-                alert('Onayı kaydetmek için önce öğrenci numarasıyla giriş yapın.');
-                return;
-            }
-            const acceptedAt = new Date().toISOString();
-            const { data, error } = await supabaseClient
-                .from('uyeler')
-                .update({ sozlesme_kabul_edildi: true, sozlesme_kabul_tarihi: acceptedAt })
-                .eq('id', pendingAgreementUyeId)
-                .select('*')
-                .maybeSingle();
-            if (error) {
-                alert('Sözleşme onayı kaydedilemedi: ' + error.message + '\nSupabase uyeler tablosuna sozlesme_kabul_edildi ve sozlesme_kabul_tarihi alanlarını ekleyin.');
-                return;
-            }
-            if (!data) {
-                alert('Sözleşme onayı kaydedilemedi. Supabase UPDATE iznini/RLS politikasını kontrol edin.');
-                return;
-            }
-            currentLoggedInUye = data;
-            const index = allUyeler.findIndex(u => String(u.id) === String(data.id));
-            if (index >= 0) allUyeler[index] = data;
-            pendingAgreementUyeId = null;
-            document.getElementById('sozlesme-modal').classList.add('hidden');
-            showOgrenciPanel();
-        }
-
-        // --- ÜYELER ---
-        async function loadUyeler() {
-            const { data: uyeler, error } = await supabaseClient.from('uyeler').select('*').order('created_at', { ascending: false });
-            if (error) { console.error("Üyeler yüklenemedi:", error.message); return; }
-            allUyeler = uyeler || [];
-            renderUyeler(allUyeler);
-
-            document.getElementById('stat-toplam').innerText = allUyeler.length;
-            document.getElementById('stat-aktif').innerText = allUyeler.filter(u => u.durum === 'Aktif').length;
-            document.getElementById('stat-biten').innerText = allUyeler.filter(u => u.durum === 'Bitişi Yaklaşan').length;
-        }
-
-        function renderUyeler(list) {
-            const tbody = document.getElementById('uye-listesi');
-            tbody.innerHTML = '';
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-gray-500">Kayıtlı üye bulunamadı.</td></tr>`;
-                return;
-            }
-            list.forEach(u => {
-                let badgeClass = u.durum === 'Aktif' ? 'bg-green-950 text-green-400 border-green-800' : (u.durum === 'Bitişi Yaklaşan' ? 'bg-yellow-950 text-yellow-400 border-yellow-800' : 'bg-red-950 text-red-400 border-red-800');
-                
-                const total = u.total_lessons || 12;
-                let sessionDates = [];
-                try { sessionDates = typeof u.session_dates === 'string' ? JSON.parse(u.session_dates) : (u.session_dates || []); } catch(e) { sessionDates = []; }
-                const completed = sessionDates.filter(d => d !== null && d !== undefined && d !== '').length;
-                const remaining = Math.max(0, total - completed);
-
-                let telClean = u.telefon ? u.telefon.replace(/\D/g, '') : '';
-                if (telClean.startsWith('0')) telClean = '9' + telClean;
-                else if (!telClean.startsWith('90') && telClean.length === 10) telClean = '90' + telClean;
-                
-                const waMesaj = encodeURIComponent(`Harder Army MMA: Merhaba ${u.ad_soyad}, ${u.paket} seans ve üyelik durumunuz hakkında bilgi vermek istedik. Salonumuza bekleriz! Osu! 🥋`);
-                const waLink = telClean ? `https://wa.me/${telClean}?text=${waMesaj}` : '#';
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-zinc-800/40 transition">
-                        <td class="p-3.5 font-bold text-white">${escapeHtml(u.ad_soyad)}</td>
-                        <td class="p-3.5 text-gray-400">
-                            ${escapeHtml(u.telefon || '-')}
-                            ${telClean ? `<a href="${waLink}" target="_blank" class="ml-1.5 text-green-500 hover:text-green-400 inline-block text-sm" title="WhatsApp Mesaj Gönder"><i class="fa-brands fa-whatsapp"></i></a>` : ''}
-                        </td>
-                        <td class="p-3.5"><span class="bg-zinc-800 px-2 py-1 rounded text-[11px] text-gray-300">${escapeHtml(u.paket)}</span></td>
-                        <td class="p-3.5">
-                            <div class="flex items-center gap-2">
-                                <span class="text-gray-300">Yapılan: <strong class="text-red-500">${completed}</strong> / Kalan: <strong class="text-green-500">${remaining}</strong></span>
-                                <button onclick="openSeansModal('${u.id}')" class="bg-zinc-800 hover:bg-zinc-700 text-yellow-400 px-2 py-1 rounded text-[10px] font-bold border border-zinc-700 transition"><i class="fa-solid fa-calendar-check mr-1"></i> Seanslar</button>
-                            </div>
-                        </td>
-                        <td class="p-3.5 font-semibold text-green-400">₺${u.ucret}</td>
-                        <td class="p-3.5 text-gray-400">${escapeHtml(u.bitis_tarihi || '-')}</td>
-                        <td class="p-3.5"><span class="px-2 py-0.5 rounded border text-[10px] font-bold ${badgeClass}">${escapeHtml(u.durum)}</span></td>
-                        <td class="p-3.5 text-right space-x-1">
-                            <button onclick="editUye('${u.id}')" class="bg-zinc-800 hover:bg-zinc-700 text-gray-300 p-1.5 rounded transition"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteUye('${u.id}')" aria-label="Üyeyi sil" title="Üyeyi sil" class="bg-red-950 hover:bg-red-900 text-red-400 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        function filterUyeler() {
-            const q = document.getElementById('uye-ara').value.toLocaleLowerCase('tr-TR');
-            const filtered = allUyeler.filter(u => String(u.ad_soyad || '').toLocaleLowerCase('tr-TR').includes(q) || (u.telefon && u.telefon.includes(q)));
-            renderUyeler(filtered);
-        }
-
-        function openUyeModal() {
-            document.getElementById('uye-id').value = '';
-            document.getElementById('modal-title').innerText = 'Yeni Sporcu Kaydı';
-            document.getElementById('uye-form').reset();
-            document.getElementById('m-toplam-ders').value = 12;
-            document.getElementById('uye-modal').classList.remove('hidden');
-        }
-
-        function closeUyeModal() { document.getElementById('uye-modal').classList.add('hidden'); }
-
-        function editUye(id) {
-            const u = allUyeler.find(item => item.id == id);
-            if (!u) return;
-
-            document.getElementById('uye-id').value = u.id;
-            document.getElementById('modal-title').innerText = 'Sporcu Bilgilerini Düzenle';
-            document.getElementById('m-ad').value = u.ad_soyad || '';
-            document.getElementById('m-tel').value = u.telefon || '';
-            document.getElementById('m-paket').value = u.paket || 'MMA Group';
-            document.getElementById('m-ucret').value = u.ucret || '';
-            document.getElementById('m-toplam-ders').value = u.total_lessons || 12;
-            document.getElementById('m-bitis').value = u.bitis_tarihi || '';
-            document.getElementById('m-durum').value = u.durum || 'Aktif';
-
-            document.getElementById('uye-modal').classList.remove('hidden');
-        }
-
-        async function deleteUye(id) {
-            if (!supabaseClient) { alert('Veritabanı bağlantısı yok.'); return; }
-            if (!confirm('Bu sporcuyu kalıcı olarak silmek istediğinize emin misiniz?')) return;
-
-            const { data, error } = await supabaseClient
-                .from('uyeler')
-                .delete()
-                .eq('id', id)
-                .select('id')
-                .maybeSingle();
-
-            if (error) {
-                alert('Üye silinemedi: ' + error.message + '\nSupabase DELETE iznini ve RLS politikasını kontrol edin.');
-                return;
-            }
-            if (!data) {
-                alert('Üye silinmedi. Kayıt bulunamadı veya Supabase RLS/DELETE izni engelliyor.');
-                return;
-            }
-            if (currentLoggedInUye && String(currentLoggedInUye.id) === String(id)) {
-                currentLoggedInUye = null;
-                document.getElementById('ogrenci-detay-alani').classList.add('hidden');
-            }
-            await loadData();
-            alert('Üye kaydı silindi. Eski kasa hareketleri korunmuştur.');
-        }
-
-        async function saveUye(e) {
-            e.preventDefault();
-            const id = document.getElementById('uye-id').value;
-            const adSoyad = document.getElementById('m-ad').value;
-            const paket = document.getElementById('m-paket').value;
-            const ucret = Number(document.getElementById('m-ucret').value);
-            const lessonCount = Number(document.getElementById('m-toplam-ders').value);
-            if (!Number.isFinite(ucret) || ucret < 0 || !Number.isInteger(lessonCount) || lessonCount < 1 || lessonCount > 100) { alert('Ücret sıfır veya daha büyük, seans sayısı 1–100 arasında tam sayı olmalıdır.'); return; }
-
-            const payload = {
-                ad_soyad: adSoyad,
-                telefon: document.getElementById('m-tel').value,
-                paket: paket,
-                ucret: ucret,
-                total_lessons: lessonCount,
-                bitis_tarihi: document.getElementById('m-bitis').value,
-                durum: document.getElementById('m-durum').value
-            };
-
-            let response;
-            if (id) {
-                const existing = allUyeler.find(item => String(item.id) === String(id));
-                if (existing && (existing.paket !== paket || Number(existing.total_lessons || 12) !== lessonCount)) {
-                    if (!confirm('Paket veya seans sayısı değişti. Eski paketin seans geçmişi sıfırlansın mı?')) return;
-                    payload.session_dates = JSON.stringify([]);
-                }
-                response = await supabaseClient.from('uyeler').update(payload).eq('id', id);
-            } else {
-                payload.baslangic_tarihi = localDateISO();
-                response = await supabaseClient.from('uyeler').insert([payload]);
-
-                if (!response.error) {
-                    const bugunTarih = localDateISO();
-                    await supabaseClient.from('kasa_hareketleri').insert([{
-                        tip: 'Gelir',
-                        baslik: `${adSoyad} - ${paket} Aidatı`,
-                        tutar: ucret,
-                        kategori: 'Aidat',
-                        tarih: bugunTarih
-                    }]);
-                }
-            }
-
-            if (response.error) {
-                alert('Hata: ' + response.error.message);
-                return;
-            }
-
-            closeUyeModal();
-            loadData();
-        }
-
-        // --- KASA ---
-        async function loadKasa() {
-            const { data: kasa, error } = await supabaseClient.from('kasa_hareketleri').select('*').order('created_at', { ascending: false });
-            if (error) { console.error("Kasa hareketleri yüklenemedi:", error.message); return; }
-            allKasa = kasa || [];
-            renderKasaAySecenekleri();
-            renderKasaAy();
-
-            let totalGelir = 0;
-            let totalGider = 0;
-            allKasa.forEach(k => {
-                const tutar = Number(k.tutar) || 0;
-                if (k.tip === 'Gelir') totalGelir += tutar;
-                else totalGider += tutar;
-            });
-            const bakiye = totalGelir - totalGider;
-            document.getElementById('stat-kasa').innerText = `₺${bakiye.toLocaleString('tr-TR')}`;
-        }
-
-        function renderKasaAySecenekleri() {
-            const select = document.getElementById('kasa-ay-sec');
-            if (!select) return;
-            const current = localDateISO().slice(0, 7);
-            const months = new Set([current, ...allKasa.map(item => String(item.tarih || '').slice(0, 7)).filter(m => /^\d{4}-\d{2}$/.test(m))]);
-            const previous = select.value;
-            select.innerHTML = [...months].sort().reverse().map(month => {
-                const [year, number] = month.split('-');
-                const label = new Date(Number(year), Number(number)-1, 1).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
-                return `<option value="${month}">${escapeHtml(label)}</option>`;
-            }).join('');
-            select.value = months.has(previous) ? previous : current;
-        }
-
-        function renderKasaAy() {
-            const month = document.getElementById('kasa-ay-sec')?.value || localDateISO().slice(0, 7);
-            const movements = allKasa.filter(item => String(item.tarih || '').startsWith(month));
-            const income = movements.filter(item => item.tip === 'Gelir').reduce((sum, item) => sum + (Number(item.tutar) || 0), 0);
-            const expense = movements.filter(item => item.tip === 'Gider').reduce((sum, item) => sum + (Number(item.tutar) || 0), 0);
-            document.getElementById('kasa-ay-ozet').innerHTML = `Bu ay: <strong class="text-green-400">Gelir ₺${income.toLocaleString('tr-TR')}</strong> · <strong class="text-red-400">Gider ₺${expense.toLocaleString('tr-TR')}</strong> · <strong class="text-white">Net ₺${(income-expense).toLocaleString('tr-TR')}</strong>`;
-            renderKasa(movements);
-        }
-        function renderKasa(list) {
-            const tbody = document.getElementById('kasa-listesi');
-            tbody.innerHTML = '';
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">Kasa hareketi bulunamadı.</td></tr>`;
-                return;
-            }
-            list.forEach(k => {
-                const isGelir = k.tip === 'Gelir';
-                const badge = isGelir ? '<span class="bg-green-950 text-green-400 border border-green-800 px-2 py-0.5 rounded text-[10px] font-bold">Gelir</span>' : '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold">Gider</span>';
-                const tutarClass = isGelir ? 'text-green-400' : 'text-red-400';
-                const tutarSign = isGelir ? '+' : '-';
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-zinc-800/40 transition">
-                        <td class="p-3.5 text-gray-400">${k.tarih || '-'}</td>
-                        <td class="p-3.5">${badge}</td>
-                        <td class="p-3.5 font-bold text-white">${escapeHtml(k.baslik)}</td>
-                        <td class="p-3.5 text-gray-400">${escapeHtml(k.kategori || '-')}</td>
-                        <td class="p-3.5 text-right font-semibold ${tutarClass}">${tutarSign}₺${Number(k.tutar).toLocaleString('tr-TR')}</td>
-                        <td class="p-3.5 text-right">
-                            <button onclick="deleteKasa('${k.id}')" class="bg-red-950 hover:bg-red-900 text-red-400 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        function openKasaModal() { document.getElementById('kasa-modal').classList.remove('hidden'); }
-        function closeKasaModal() { document.getElementById('kasa-modal').classList.add('hidden'); }
-
-        async function saveKasa(e) {
-            e.preventDefault();
-            const amount = Number(document.getElementById('k-tutar').value);
-            if (!Number.isFinite(amount) || amount <= 0) { alert('Tutar sıfırdan büyük olmalıdır.'); return; }
-            const payload = {
-                tip: document.getElementById('k-tip').value,
-                baslik: document.getElementById('k-baslik').value,
-                tutar: amount,
-                kategori: document.getElementById('k-kategori').value,
-                tarih: localDateISO()
-            };
-
-            const { error } = await supabaseClient.from('kasa_hareketleri').insert([payload]);
-            if (error) { alert('Hata: ' + error.message); return; }
-
-            closeKasaModal();
-            loadData();
-        }
-
-        async function deleteKasa(id) {
-            if(!confirm('Bu kasa hareketini silmek istediğinize emin misiniz?')) return;
-            const { error } = await supabaseClient.from('kasa_hareketleri').delete().eq('id', id);
-            if (error) { alert('Silme hatası: ' + error.message); return; }
-            loadData();
-        }
-
-        // --- SEANS PENCERESİ VE TARİH SEÇİMİ ---
-        function openSeansModal(id) {
-            const u = allUyeler.find(item => item.id == id);
-            if (!u) return;
-            activeUyeForSeans = u;
-
-            document.getElementById('seans-modal-title').innerText = `${u.ad_soyad} Seans Takibi`;
-            document.getElementById('seans-modal-paket').innerText = u.paket;
-            
-            let sessionDates = [];
-            try { sessionDates = typeof u.session_dates === 'string' ? JSON.parse(u.session_dates) : (u.session_dates || []); } catch(e) { sessionDates = []; }
-            
-            const total = u.total_lessons || 12;
-            const container = document.getElementById('seans-listesi-container');
-            container.innerHTML = '';
-
-            let html = `<div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">`;
-
-            for (let i = 0; i < total; i++) {
-                const tarihStr = sessionDates[i];
-                const isCompleted = !!tarihStr;
-
-                html += `
-                    <div onclick="tiklaSeansKutusu(${i})" class="flex flex-col items-center justify-center p-3 rounded-xl border text-center cursor-pointer transition select-none ${isCompleted ? 'bg-zinc-800/80 border-green-500/50 shadow-md' : 'bg-black/60 border-zinc-800 hover:border-zinc-700 opacity-75'}">
-                        <span class="text-xs font-bold ${isCompleted ? 'text-gray-200' : 'text-gray-400'} mb-1.5">${i + 1}. Seans</span>
-                        <div class="my-1">
-                            ${isCompleted 
-                                ? '<div class="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center text-black text-sm font-bold shadow-lg"><i class="fa-solid fa-check"></i></div>' 
-                                : '<div class="w-7 h-7 rounded-full border-2 border-zinc-700 bg-zinc-900"></div>'}
-                        </div>
-                        <span class="text-[9px] ${isCompleted ? 'text-green-400 font-semibold' : 'text-gray-600'} mt-1.5 h-4 flex items-center justify-center">
-                            ${isCompleted ? escapeHtml(tarihStr) : 'Tarih Seç'}
-                        </span>
-                    </div>
-                `;
-            }
-
-            html += `</div>`;
-            container.innerHTML = html;
-            document.getElementById('seans-modal').classList.remove('hidden');
-        }
-
-        function tiklaSeansKutusu(index) {
-            activeSeansIndex = index;
-            document.getElementById('tarih-modal-baslik').innerText = `${index + 1}. Seans İçin Tarih & Saat`;
-            
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            
-            document.getElementById('secilen-tarih-saat').value = `${year}-${month}-${day}T${hours}:${minutes}`;
-            document.getElementById('seans-tarih-modal').classList.remove('hidden');
-        }
-
-        async function seansiKaydetOnayla() {
-            if (activeUyeForSeans === null || activeSeansIndex === null) return;
-            const val = document.getElementById('secilen-tarih-saat').value;
-            if(!val) { alert('Lütfen tarih ve saat seçin!'); return; }
-
-            const d = new Date(val);
-            const formatted = `${d.getDate()} ${d.toLocaleString('tr-TR', { month: 'short' })} ${d.getFullYear()} - ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-
-            let sessionDates = [];
-            try { sessionDates = typeof activeUyeForSeans.session_dates === 'string' ? JSON.parse(activeUyeForSeans.session_dates) : (activeUyeForSeans.session_dates || []); } catch(e) { sessionDates = []; }
-            
-            sessionDates[activeSeansIndex] = formatted;
-
-            const { error } = await supabaseClient
-                .from('uyeler')
-                .update({ session_dates: JSON.stringify(sessionDates) })
-                .eq('id', activeUyeForSeans.id);
-
-            if (error) {
-                alert('Seans kaydedilirken hata: ' + error.message);
-                return;
-            }
-
-            activeUyeForSeans.session_dates = sessionDates;
-            closeTarihModal();
-            openSeansModal(activeUyeForSeans.id);
-            loadUyeler();
-        }
-
-        async function seansiKaldir() {
-            if (activeUyeForSeans === null || activeSeansIndex === null) return;
-            let sessionDates = [];
-            try { sessionDates = typeof activeUyeForSeans.session_dates === 'string' ? JSON.parse(activeUyeForSeans.session_dates) : (activeUyeForSeans.session_dates || []); } catch(e) { sessionDates = []; }
-            if (!sessionDates[activeSeansIndex]) { alert('Bu seansta işlenmiş ders yok. Silmek için önce işlenmiş bir dersi seçin.'); return; }
-            if (!confirm(`${activeUyeForSeans.ad_soyad || 'Öğrencinin'} ${activeSeansIndex + 1}. seansındaki işlenmiş dersi silmek istiyor musunuz? Bu işlemden sonra boş seansa yeni ders ekleyebilirsiniz.`)) return;
-            sessionDates[activeSeansIndex] = null;
-
-            const { error } = await supabaseClient
-                .from('uyeler')
-                .update({ session_dates: JSON.stringify(sessionDates) })
-                .eq('id', activeUyeForSeans.id);
-
-            if (error) {
-                alert('Seans iptal edilirken hata: ' + error.message);
-                return;
-            }
-
-            activeUyeForSeans.session_dates = sessionDates;
-            closeTarihModal();
-            openSeansModal(activeUyeForSeans.id);
-            loadUyeler();
-        }
-
-        function closeSeansModal() {
-            document.getElementById('seans-modal').classList.add('hidden');
-            activeUyeForSeans = null;
-        }
-
-        function closeTarihModal() {
-            document.getElementById('seans-tarih-modal').classList.add('hidden');
-            activeSeansIndex = null;
-        }
-    </script>
+<!-- Header / Navbar -->
+<header class="bg-zinc-950 border-b border-red-900/40 p-4 sticky top-0 z-50 shadow-lg">
+<div class="max-w-5xl mx-auto flex justify-between items-center">
+<div class="flex items-center gap-3.5">
+<div class="relative w-11 h-11 rounded-xl border border-red-600/40 flex items-center justify-center shadow-xl shadow-red-950/30 overflow-hidden group">
+<img src="harder-army-icon.jpg" alt="Harder Army MMA" class="w-full h-full object-cover group-hover:scale-110 transition duration-300">
+</div>
+<div>
+<h1 class="text-xl font-extrabold tracking-wider text-red-600 leading-none">HARDER ARMY MMA</h1>
+<p class="text-[10px] text-gray-400 font-medium tracking-widest mt-0.5">BAHÇEŞEHİR MMA</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button onclick="switchMainView('ogrenci')" id="btn-view-ogrenci" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-red-400 px-3 py-1.5 rounded-lg border border-red-900/40 transition font-bold">
+<i class="fa-solid fa-user mr-1"></i> Öğrenci Girişi
+</button>
+<button id="btn-setup" onclick="toggleSetup()" class="text-xs bg-zinc-900 hover:bg-zinc-800 text-gray-400 px-3 py-1.5 rounded-lg border border-zinc-800 transition">
+<i class="fa-solid fa-gear mr-1"></i> Ayarlar
+</button>
+</div>
+</div>
+</header>
+
+<div class="max-w-5xl mx-auto p-4 space-y-6">
+
+<!-- Supabase Bağlantı Ayar Alanı -->
+<div id="setup-box" class="bg-zinc-900 border border-red-900/60 p-4 rounded-xl hidden shadow-xl">
+<div class="flex justify-between items-center mb-2">
+<h3 class="text-sm font-bold text-red-500">Supabase API Ayarları</h3>
+<button onclick="toggleSetup()" class="text-gray-400 text-xs"><i class="fa-solid fa-xmark text-base"></i></button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+<input type="text" id="sb-url" placeholder="https://xyz.supabase.co" class="bg-black border border-zinc-800 p-2.5 rounded-lg text-xs text-white outline-none focus:border-red-600">
+<input type="text" id="sb-key" placeholder="sb_publishable_..." class="bg-black border border-zinc-800 p-2.5 rounded-lg text-xs text-white outline-none focus:border-red-600">
+</div>
+<button onclick="saveConfig()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 rounded-lg transition">Bağlantıyı Kaydet</button>
+</div>
+
+<!-- ANA GÖRÜNÜM 1: YÖNETİM PANELİ -->
+<div id="view-yonetim" class="space-y-6">
+<!-- İstatistik Özet Kartları -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+<div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
+<p class="text-gray-400 text-[11px] font-medium">Aktif Sporcu</p>
+<p id="stat-aktif" class="text-2xl font-black text-white mt-1">0</p>
+</div>
+<div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
+<p class="text-gray-400 text-[11px] font-medium">Bitişi Yaklaşan</p>
+<p id="stat-biten" class="text-2xl font-black text-yellow-500 mt-1">0</p>
+</div>
+<div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
+<p class="text-gray-400 text-[11px] font-medium">Kasa Bakiyesi (Bu Ay)</p>
+<p id="stat-kasa" class="text-2xl font-black text-green-500 mt-1">₺0</p>
+</div>
+<div class="bg-zinc-900 border border-zinc-800/80 p-3.5 rounded-xl">
+<p class="text-gray-400 text-[11px] font-medium">Malzeme Kasası (Bu Ay)</p>
+<p id="stat-malzeme-kasa" class="text-2xl font-black text-cyan-400 mt-1">₺0</p>
+</div>
+</div>
+
+<!-- Sekme Butonları -->
+<div class="flex bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs font-bold">
+<button onclick="switchTab('uyeler')" id="tab-uyeler" class="flex-1 py-2.5 rounded-lg bg-red-600 text-white transition">
+<i class="fa-solid fa-users mr-1.5"></i> Üyeler & Seans Takibi
+</button>
+<button onclick="switchTab('stok')" id="tab-stok" class="flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition">
+<i class="fa-solid fa-boxes-stacked mr-1.5"></i> Ekipman & Malzeme Kasası
+</button>
+<button onclick="switchTab('kasa')" id="tab-kasa" class="flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition">
+<i class="fa-solid fa-wallet mr-1.5"></i> Ana Kasa / Gelir-Gider
+</button>
+</div>
+
+<!-- SEKME 1: ÜYE YÖNETİMİ -->
+<div id="sec-uyeler" class="space-y-4">
+<div class="flex flex-col sm:flex-row justify-between gap-3">
+<input type="text" id="uye-ara" oninput="filterUyeler()" placeholder="Sporcu Ara (Ad, Telefon)..." class="bg-zinc-900 border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600 flex-1">
+<div class="flex gap-2">
+<button onclick="openQrModal()" class="bg-zinc-800 hover:bg-zinc-700 text-yellow-400 text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2 border border-zinc-700 transition">
+<i class="fa-solid fa-qrcode"></i> Salon QR Kodu
+</button>
+<button onclick="openUyeModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-red-950/40 transition">
+<i class="fa-solid fa-user-plus"></i> Yeni Üye Ekle
+</button>
+</div>
+</div>
+
+<div class="bg-zinc-900 rounded-xl border border-zinc-800/80 overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left text-xs text-gray-300">
+<thead class="bg-zinc-950 text-gray-400 font-semibold border-b border-zinc-800">
+<tr>
+<th class="p-3.5">Sporcu</th>
+<th class="p-3.5">İletişim & WhatsApp</th>
+<th class="p-3.5">Branş / Paket</th>
+<th class="p-3.5">Seans Takibi</th>
+<th class="p-3.5">Ücret</th>
+<th class="p-3.5">Bitiş Tarihi</th>
+<th class="p-3.5">Durum</th>
+<th class="p-3.5 text-right">İşlem</th>
+</tr>
+</thead>
+<tbody id="uye-listesi" class="divide-y divide-zinc-800/50">
+<tr><td colspan="8" class="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<!-- SEKME 2: EKİPMAN & MALZEME KASASI -->
+<div id="sec-stok" class="space-y-4 hidden">
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-zinc-900 p-4 rounded-xl border border-zinc-800">
+<div>
+<h2 class="text-sm font-bold text-cyan-400"><i class="fa-solid fa-box-archive mr-1.5"></i> Malzeme & Ekipman Kasası / Stok Takibi</h2>
+<p class="text-[11px] text-gray-400 mt-0.5">Satılan her ürün otomatik olarak **Malzeme Kasası** gelirlerine işlenir ve stoktan düşer.</p>
+</div>
+<button onclick="openStokModal()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition shadow-lg">
+<i class="fa-solid fa-plus"></i> Yeni Ürün Ekle
+</button>
+</div>
+
+<div class="bg-zinc-900 rounded-xl border border-zinc-800/80 overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left text-xs text-gray-300">
+<thead class="bg-zinc-950 text-gray-400 font-semibold border-b border-zinc-800">
+<tr>
+<th class="p-3.5">Ürün Adı</th>
+<th class="p-3.5">Fiyat</th>
+<th class="p-3.5">Mevcut Stok</th>
+<th class="p-3.5">Toplam Satılan</th>
+<th class="p-3.5 text-right">Hızlı Satış & İşlem</th>
+</tr>
+</thead>
+<tbody id="stok-listesi" class="divide-y divide-zinc-800/50">
+<tr><td colspan="5" class="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<!-- SEKME 3: KASA / FİNANSAL RAPORLAR -->
+<div id="sec-kasa" class="space-y-6 hidden">
+<div class="flex justify-between items-center">
+<h2 class="text-sm font-bold text-gray-300">Ana Kasa / Gelir-Gider & Finansal Raporlar</h2>
+<button onclick="openKasaModal()" class="bg-green-600 hover:bg-green-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 transition shadow-lg shadow-green-950/40">
+<i class="fa-solid fa-plus"></i> Gelir / Gider Ekle
+</button>
+</div>
+
+<!-- TÜM ZAMANLAR ÖZET KARTLARI -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+<div class="bg-zinc-900 border border-zinc-800/80 p-4 rounded-xl">
+<p class="text-gray-400 text-[11px] font-medium">Tüm Zamanlar Toplam Gelir</p>
+<p id="rapor-toplam-gelir" class="text-xl font-black text-green-400 mt-1">₺0</p>
+</div>
+<div class="bg-zinc-900 border border-zinc-800/80 p-4 rounded-xl">
+<p class="text-gray-400 text-[11px] font-medium">Tüm Zamanlar Toplam Gider</p>
+<p id="rapor-toplam-gider" class="text-xl font-black text-red-400 mt-1">₺0</p>
+</div>
+<div class="bg-zinc-900 border border-zinc-800/80 p-4 rounded-xl">
+<p class="text-gray-400 text-[11px] font-medium">Tüm Zamanlar Net Kasa</p>
+<p id="rapor-net-bakiye" class="text-xl font-black text-white mt-1">₺0</p>
+</div>
+</div>
+
+<!-- KATEGORİ DAĞILIMI & FİLTRELEME PANELİ -->
+<div class="bg-zinc-900 border border-zinc-800/80 rounded-xl p-4 space-y-4">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-zinc-800 pb-3">
+<div>
+<p class="text-xs font-bold text-gray-200">Aylık ve Kategori Arşivi</p>
+<p class="text-[11px] text-gray-500 mt-0.5">Seçilen aya ve türe göre gelir/gider dağılımını inceleyin.</p>
+</div>
+<div class="flex items-center gap-2">
+<select id="kasa-filtre-tur" onchange="renderKasaAy()" class="bg-black border border-zinc-700 p-2 rounded-lg text-xs text-white outline-none focus:border-green-600">
+<option value="Tumu">Tüm Türler</option>
+<option value="Gelir">Sadece Gelirler</option>
+<option value="Gider">Sadece Giderler</option>
+</select>
+<select id="kasa-ay-sec" onchange="renderKasaAy()" class="bg-black border border-zinc-700 p-2 rounded-lg text-xs text-white outline-none focus:border-green-600"></select>
+</div>
+</div>
+<div id="kasa-ay-ozet" class="text-xs text-gray-300 bg-zinc-950 p-3 rounded-xl border border-zinc-800/60"></div>
+</div>
+
+<div class="bg-zinc-900 rounded-xl border border-zinc-800/80 overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left text-xs text-gray-300">
+<thead class="bg-zinc-950 text-gray-400 font-semibold border-b border-zinc-800">
+<tr>
+<th class="p-3.5">Tarih</th>
+<th class="p-3.5">Tür</th>
+<th class="p-3.5">Açıklama</th>
+<th class="p-3.5">Kategori</th>
+<th class="p-3.5 text-right">Tutar</th>
+<th class="p-3.5 text-right">İşlem</th>
+</tr>
+</thead>
+<tbody id="kasa-listesi" class="divide-y divide-zinc-800/50">
+<tr><td colspan="6" class="p-8 text-center text-gray-500">Yükleniyor...</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ANA GÖRÜNÜM 2: ÖĞRENCİ GİRİŞ & CHECK-IN EKRANI -->
+<div id="view-ogrenci" class="space-y-6 hidden">
+<div class="relative overflow-hidden bg-gradient-to-b from-zinc-900 via-zinc-900 to-black border border-red-900/50 rounded-2xl p-6 max-w-md mx-auto shadow-2xl shadow-red-950/20 space-y-4">
+<div class="absolute -top-24 -right-16 w-56 h-56 bg-red-700/10 blur-3xl rounded-full pointer-events-none"></div>
+<div class="relative flex justify-center pt-1"><img src="harder-army-icon.jpg" alt="Harder Army MMA" class="w-20 h-20 rounded-2xl border border-red-800/70 shadow-xl shadow-red-950/50"></div>
+<div class="text-center space-y-1">
+<h2 class="text-lg font-black tracking-wide text-red-500">SALON GİRİŞİ & CHECK-IN</h2>
+<p class="text-xs text-gray-400">Telefon numaranızı girerek salon girişinizi yapabilir ve seanslarınızı takip edebilirsiniz.</p>
+</div>
+<div class="relative space-y-3">
+<div>
+<label class="block text-gray-400 text-xs mb-1">Telefon Numaranız</label>
+<input type="tel" id="ogrenci-telefon-input" placeholder="05xxxxxxxxxx" class="w-full bg-black border border-zinc-800 p-3 rounded-xl text-xs text-white outline-none focus:border-red-600">
+</div>
+<button onclick="ogrenciGirisYap()" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-red-950/50">
+Giriş Yap & Seanslarımı Gör
+</button>
+<div class="text-center pt-2">
+<button onclick="openSozlesmeModal()" class="text-[11px] text-gray-400 hover:text-red-400 underline transition">
+<i class="fa-solid fa-file-contract mr-1"></i> Üyelik ve Salon Sözleşmesi / Kuralları
+</button>
+</div>
+</div>
+<div class="pt-2 text-center">
+<button onclick="switchMainView('yonetim')" class="text-xs text-zinc-500 hover:text-gray-300 transition">
+<i class="fa-solid fa-arrow-left mr-1"></i> Yönetici Paneline Geri Dön
+</button>
+</div>
+</div>
+
+<!-- Öğrenci Profil Bilgi ve Seans Sonuç Alanı -->
+<div id="ogrenci-detay-alani" class="hidden space-y-4 max-w-2xl mx-auto">
+<div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div>
+<span id="og-brans-badge" class="bg-red-600/20 text-red-500 border border-red-900/50 px-2.5 py-1 rounded-full text-[10px] font-bold">Branş</span>
+<h3 id="og-ad-soyad" class="text-lg font-black text-white mt-1.5">Sporcu Adı</h3>
+<p class="text-xs text-gray-400 mt-0.5">Bitiş Tarihi: <strong id="og-bitis" class="text-yellow-400">-</strong></p>
+</div>
+<div class="flex items-center gap-3">
+<div class="bg-black/60 border border-zinc-800 p-3 rounded-xl text-center min-w-[120px]">
+<p class="text-[10px] text-gray-400">Kalan / Toplam</p>
+<p class="text-sm font-black text-green-400 mt-0.5"><span id="og-kalan">0</span> / <span id="og-toplam">12</span></p>
+</div>
+<button onclick="ogrenciCheckInYap()" class="bg-green-600 hover:bg-green-700 text-white font-bold p-3.5 rounded-xl text-xs flex flex-col items-center justify-center gap-1 shadow-lg transition">
+<i class="fa-solid fa-qrcode text-base"></i>
+<span>Check-In Yap</span>
+</button>
+<button onclick="startAttendanceQrScan()" class="bg-yellow-600 hover:bg-yellow-700 text-black font-bold p-3.5 rounded-xl text-xs flex flex-col items-center justify-center gap-1 shadow-lg transition">
+<i class="fa-solid fa-camera text-base"></i>
+<span>QR Tara</span>
+</button>
+</div>
+</div>
+
+<div class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-xl space-y-3">
+<h4 class="text-xs font-bold text-gray-300"><i class="fa-solid fa-calendar-days mr-1.5 text-red-500"></i> Seans Geçmişim & Randevularım</h4>
+<div id="ogrenci-seans-listesi" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+<!-- Dinamik Seans Kutuları -->
+</div>
+</div>
+</div>
+</div>
+
+</div>
+
+<!-- MODAL: ÜRÜN / STOK EKLE -->
+<div id="stok-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl">
+<div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+<h3 class="text-base font-bold text-red-500">Yeni Malzeme / Ürün Ekle</h3>
+<button onclick="closeStokModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+</div>
+<form id="stok-form" onsubmit="saveStok(event)" class="space-y-3 text-xs">
+<div>
+<label class="block text-gray-400 mb-1">Ürün Seçimi / Adı *</label>
+<select id="s-ad-select" onchange="stokSecimDegisti()" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600 mb-2">
+<option value="Rashguard">Rashguard</option>
+<option value="Tişört">Tişört</option>
+<option value="Dişlik">Dişlik</option>
+<option value="Bandaj">Bandaj</option>
+<option value="Kaval koruyucu">Kaval koruyucu</option>
+<option value="Eldiven boks">Eldiven boks</option>
+<option value="Eldiven mma">Eldiven mma</option>
+<option value="Kask">Kask</option>
+<option value="Ozel">-- Özel Başlık Yaz --</option>
+</select>
+<input type="text" id="s-ad" placeholder="Örn: Harder Army Rashguard" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600 hidden">
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div>
+<label class="block text-gray-400 mb-1">Satış Fiyatı (₺) *</label>
+<input type="number" id="s-fiyat" placeholder="750" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+</div>
+<div>
+<label class="block text-gray-400 mb-1">Mevcut Stok Adedi *</label>
+<input type="number" id="s-adet" placeholder="10" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+</div>
+</div>
+<div class="pt-2 flex gap-2">
+<button type="button" onclick="closeStokModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-lg text-gray-300 font-bold transition">İptal</button>
+<button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 py-2.5 rounded-lg text-white font-bold transition">Ürünü Kaydet</button>
+</div>
+</form>
+</div>
+</div>
+
+<!-- MODAL: UYGULAMA İÇİ SALON QR TARAMA -->
+<div id="attendance-qr-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[70] flex items-center justify-center p-4 hidden">
+<div class="bg-zinc-900 border border-yellow-700/60 w-full max-w-sm rounded-2xl p-5 text-center space-y-4">
+<div class="flex justify-between items-center"><h3 class="text-sm font-bold text-yellow-400">Salon QR Kodunu Tara</h3><button onclick="stopAttendanceQrScan()" class="text-gray-300 text-xl" aria-label="Tarayıcıyı kapat">×</button></div>
+<p id="attendance-qr-status" class="text-xs text-gray-400">Kamerayı salon QR koduna yöneltin.</p>
+<div id="attendance-qr-reader" class="overflow-hidden rounded-xl"></div>
+<button onclick="stopAttendanceQrScan()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-xl text-xs font-bold">Vazgeç</button>
+</div>
+</div>
+
+<!-- MODAL: QR KOD DUVAR PENCERESİ -->
+<div id="qr-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-2xl p-6 text-center space-y-4 shadow-2xl">
+<div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+<h3 class="text-sm font-bold text-yellow-400"><i class="fa-solid fa-qrcode mr-1"></i> Salon Giriş QR Kodu</h3>
+<button onclick="closeQrModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+</div>
+<p class="text-xs text-gray-400">Öğrenciler bu QR kodu telefon kamerasıyla okutarak doğrudan giriş ekranına ulaşabilirler.</p>
+<div class="bg-white p-4 rounded-xl inline-block shadow-inner mx-auto" id="qrcode-container"></div>
+<div class="pt-2">
+<button onclick="closeQrModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 py-2.5 rounded-xl text-xs font-bold transition">Kapat</button>
+</div>
+</div>
+</div>
+
+<!-- MODAL 1: YENİ ÜYE EKLE / DÜZENLE -->
+<div id="uye-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+<div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+<h3 class="text-base font-bold text-red-500" id="modal-title">Yeni Sporcu Kaydı</h3>
+<button onclick="closeUyeModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+</div>
+<form id="uye-form" onsubmit="saveUye(event)" class="space-y-3 text-xs">
+<input type="hidden" id="uye-id">
+<div>
+<label class="block text-gray-400 mb-1">Ad Soyad *</label>
+<input type="text" id="m-ad" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+</div>
+<div>
+<label class="block text-gray-400 mb-1">Telefon (Öğrenci Girişi İçin Gerekli) *</label>
+<input type="tel" id="m-tel" required placeholder="05xx xxx xx xx" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+</div>
+<div>
+<label class="block text-gray-400 mb-1">Branş / Paket *</label>
+<select id="m-paket" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+<option value="MMA Group">MMA Group</option>
+<option value="Boks">Boks</option>
+<option value="Kickboks / Muay Thai">Kickboks / Muay Thai</option>
+<option value="BJJ / Grappling">BJJ / Grappling</option>
+<option value="Güreş">Güreş</option>
+<option value="Özel Ders (PT)">Özel Ders (PT)</option>
+<option value="Düet Ders (2 Kişilik)">Düet Ders (2 Kişilik)</option>
+<option value="Grup PT / Small Group">Grup PT / Small Group</option>
+<option value="Çocuklar / Gençler MMA">Çocuklar / Gençler MMA</option>
+<option value="Kondisyon & Functional">Kondisyon & Functional</option>
+</select>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div>
+<label class="block text-gray-400 mb-1">Aylık Ücret (₺) *</label>
+<input type="number" id="m-ucret" required placeholder="1500" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+</div>
+<div>
+<label class="block text-gray-400 mb-1">Toplam Ders Sayısı</label>
+<input type="number" id="m-toplam-ders" value="12" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+</div>
+</div>
+<div>
+<label class="block text-gray-400 mb-1">Üyelik Bitiş Tarihi *</label>
+<input type="date" id="m-bitis" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+</div>
+<div>
+<label class="block text-gray-400 mb-1">Durum *</label>
+<select id="m-durum" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-red-600">
+<option value="Aktif">Aktif</option>
+<option value="Bitişi Yaklaşan">Bitişi Yaklaşan</option>
+<option value="Pasif">Pasif</option>
+</select>
+</div>
+<div class="pt-2 flex gap-2">
+<button type="button" onclick="closeUyeModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-lg text-gray-300 font-bold transition">İptal</button>
+<button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 py-2.5 rounded-lg text-white font-bold transition">Kaydet</button>
+</div>
+</form>
+</div>
+</div>
+
+<!-- MODAL 2: SEANS TAKİP VE TARİH/SAAT SEÇİMİ -->
+<div id="seans-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div class="bg-zinc-900 border border-zinc-800 w-full max-w-lg rounded-2xl p-5 space-y-4 shadow-2xl max-h-[90vh] flex flex-col">
+<div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+<h3 class="text-base font-bold text-yellow-400" id="seans-modal-title">Seans Takibi</h3>
+<button onclick="closeSeansModal()" class="w-7 h-7 bg-red-600/20 text-red-500 rounded-full flex items-center justify-center hover:bg-red-600 hover:text-white transition">
+<i class="fa-solid fa-xmark text-sm"></i>
+</button>
+</div>
+<div class="bg-zinc-800/60 p-3 rounded-xl border border-zinc-700/60 text-center text-xs text-gray-300 flex items-center justify-center gap-3">
+<i class="fa-solid fa-clock text-green-500 text-lg"></i>
+<span>Seansa tıklayarak özel tarih ve saat seçebilir, tamamlanan seansın zamanını ayarlayabilirsiniz.</span>
+</div>
+<div class="bg-zinc-950 p-2.5 rounded-xl text-center border border-zinc-800">
+<span id="seans-modal-paket" class="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">Branş Paket</span>
+</div>
+<div id="seans-listesi-container" class="overflow-y-auto pr-1 space-y-3 flex-1 max-h-[45vh]"></div>
+<div class="pt-2">
+<button onclick="closeSeansModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-xl text-gray-300 font-bold text-xs transition">Kapat</button>
+</div>
+</div>
+</div>
+
+<!-- MODAL 3: SEANS TARİH/SAAT GÜNCELLEME ALT PENCERESİ -->
+<div id="seans-tarih-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+<div class="bg-zinc-900 border border-yellow-500/40 w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-2xl">
+<div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+<h3 class="text-sm font-bold text-yellow-400" id="tarih-modal-baslik">Seans Tarih ve Saatini Belirle</h3>
+<button onclick="closeTarihModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+</div>
+<div class="space-y-3 text-xs">
+<div>
+<label class="block text-gray-400 mb-1">Ders Tarihi ve Saati *</label>
+<input type="datetime-local" id="secilen-tarih-saat" class="w-full bg-black border border-zinc-800 p-3 rounded-lg text-white outline-none focus:border-yellow-500">
+</div>
+<div class="flex gap-2 pt-2">
+<button type="button" onclick="seansiKaldir()" class="bg-red-950 hover:bg-red-900 text-red-400 px-3 py-2.5 rounded-lg font-bold transition">Yanlış İşlenen Dersi Sil</button>
+<button type="button" onclick="seansiKaydetOnayla()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-bold transition">Kaydet & Onayla</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- MODAL 4: KASA HAREKETİ EKLE -->
+<div id="kasa-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+<div class="bg-zinc-900 border border-zinc-800 w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl">
+<div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+<h3 class="text-base font-bold text-green-500">Yeni Kasa Hareketi</h3>
+<button onclick="closeKasaModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+</div>
+<form id="kasa-form" onsubmit="saveKasa(event)" class="space-y-3 text-xs">
+<div>
+<label class="block text-gray-400 mb-1">İşlem Türü *</label>
+<select id="k-tip" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
+<option value="Gelir">Gelir (Aidat / Ekipman Satışı vb.)</option>
+<option value="Gider">Gider (Kira / Fatura / Malzeme vb.)</option>
+</select>
+</div>
+<div>
+<label class="block text-gray-400 mb-1">Açıklama / Başlık *</label>
+<input type="text" id="k-baslik" placeholder="Örn: Salon Kirası veya Ekipman Alımı" required class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div>
+<label class="block text-gray-400 mb-1">Tutar (₺) *</label>
+<input type="number" id="k-tutar" required placeholder="1000" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
+</div>
+<div>
+<label class="block text-gray-400 mb-1">Kategori</label>
+<select id="k-kategori" class="w-full bg-black border border-zinc-800 p-2.5 rounded-lg text-white outline-none focus:border-green-600">
+<option value="Aidat">Aidat</option>
+<option value="Kira">Kira</option>
+<option value="Faturalar">Faturalar (Elektrik/Su/İnternet)</option>
+<option value="Malzeme / Ekipman">Malzeme / Ekipman</option>
+<option value="Eğitmen Ödemesi">Eğitmen Ödemesi</option>
+<option value="Diğer">Diğer</option>
+</select>
+</div>
+</div>
+<div class="pt-2 flex gap-2">
+<button type="button" onclick="closeKasaModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 py-2.5 rounded-lg text-gray-300 font-bold transition">İptal</button>
+<button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 py-2.5 rounded-lg text-white font-bold transition">İşlemi Kaydet</button>
+</div>
+</form>
+</div>
+</div>
+
+<!-- MODAL 5: ÜYELİK VE SALON SÖZLEŞMESİ -->
+<div id="sozlesme-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+<div class="bg-zinc-900 border border-red-900/60 w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl max-h-[85vh] flex flex-col">
+<div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+<h3 class="text-sm font-bold text-red-500"><i class="fa-solid fa-file-contract mr-2"></i> HARDER ARMY MMA - ÜYELİK SÖZLEŞMESİ</h3>
+<button onclick="closeSozlesmeModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+</div>
+<div class="overflow-y-auto pr-2 space-y-3 text-xs text-gray-300 leading-relaxed">
+<p><strong>1. TARAFLAR VE AMAÇ:</strong> İşbu sözleşme, Harder Army MMA (Bahçeşehir MMA) salonu ile salon hizmetlerinden faydalanan sporcu/üye arasında, dövüş sanatları ve kondisyon antrenmanları kurallarını belirlemek amacıyla düzenlenmiştir.</p>
+<p><strong>2. SAĞLIK VE RİSK BEYANI:</strong> Üye, MMA, Boks, Kickboks ve Grappling gibi temaslı dövüş sanatlarının doğası gereği sakatlanma riskleri barındırdığını kabul eder. Üyenin antrenmanlara katılmasına mani kronik bir rahatsızlığı, kalp veya ortopedik engeli bulunmadığı varsayılır.</p>
+<p><strong>3. PAKET VE SEANS KURALLARI:</strong> Satın alınan seans paketleri ve üyelikler belirlenen süre içinde kullanılmalıdır. Kullanılmayan veya hakkı düşen seanslar bir sonraki aya devretmez, iade veya nakit değişimi yapılamaz.</p>
+<p><strong>4. SALON DİSİPLİNİ VE EKİPMAN:</strong> Antrenmanlarda dişlik, bandaj, eldiven ve kaval koruma gibi zorunlu kişisel koruyucu ekipmanların kullanımı mecburidir.</p>
+<p class="text-center font-bold text-red-400 pt-2">Osu! Harder Army MMA ailesine hoş geldiniz.</p>
+</div>
+<div class="pt-2 border-t border-zinc-800 space-y-3">
+<label class="flex items-start gap-2 text-xs text-gray-300">
+<input id="sozlesme-onay" type="checkbox" onchange="document.getElementById('sozlesme-kabul-btn').disabled = !this.checked" class="mt-0.5 accent-red-600">
+<span>Sözleşme ve salon kurallarını okudum, kabul ediyorum.</span>
+</label>
+<button id="sozlesme-kabul-btn" onclick="sozlesmeyiKabulEt()" disabled class="w-full bg-red-600 hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-xl text-xs transition">Onayla ve Öğrenci Paneline Geç</button>
+<button onclick="closeSozlesmeModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 font-bold py-2 rounded-xl text-xs">Kapat</button>
+</div>
+</div>
+</div>
+
+<!-- JavaScript Uygulama Mantığı -->
+<script>
+const SUPABASE_URL = 'https://igbctnhpljcklhgmuxrg.supabase.co';
+const SUPABASE_PUBLIC_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnYmN0bmhwbGpja2xoZ211eHJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5MzA3NTYsImV4cCI6MjEwNzUwNjc1Nn0.Xi9-6Q1BD72F38efC6IEMCR4aPxPKlZBLu7-cl4WkX0';
+let supabaseClient = null;
+let allUyeler = [];
+let uyeLoadError = null;
+let allKasa = [];
+let allStok = [];
+let activeUyeForSeans = null;
+let activeSeansIndex = null;
+let currentLoggedInUye = null;
+let pendingAgreementUyeId = null;
+let checkInInProgress = false;
+let attendanceQrScanner = null;
+let attendanceScanBusy = false;
+
+// İstediğin Ürün Listesi ve Başlangıç Verileri
+const DEFAULT_STOK = [
+{ id: 'stok_1', urun_adi: 'Rashguard', satis_fiyati: 850, adet: 10, satilan_adet: 0 },
+{ id: 'stok_2', urun_adi: 'Tişört', satis_fiyati: 450, adet: 15, satilan_adet: 0 },
+{ id: 'stok_3', urun_adi: 'Dişlik', satis_fiyati: 200, adet: 20, satilan_adet: 0 },
+{ id: 'stok_4', urun_adi: 'Bandaj', satis_fiyati: 250, adet: 25, satilan_adet: 0 },
+{ id: 'stok_5', urun_adi: 'Kaval koruyucu', satis_fiyati: 1200, adet: 8, satilan_adet: 0 },
+{ id: 'stok_6', urun_adi: 'Eldiven boks', satis_fiyati: 1400, adet: 6, satilan_adet: 0 },
+{ id: 'stok_7', urun_adi: 'Eldiven mma', satis_fiyati: 1300, adet: 6, satilan_adet: 0 },
+{ id: 'stok_8', urun_adi: 'Kask', satis_fiyati: 1500, adet: 4, satilan_adet: 0 }
+];
+
+function escapeHtml(value) {
+return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+}
+function localDateISO(date = new Date()) {
+return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+}
+function normalizePhone(value) {
+let digits = String(value || '').replace(/\D/g, '');
+if (digits.startsWith('0090')) digits = digits.slice(4);
+else if (digits.startsWith('90') && digits.length >= 12) digits = digits.slice(2);
+if (digits.startsWith('0') && digits.length === 11) digits = digits.slice(1);
+return digits;
+}
+
+window.onload = function() {
+const urlParams = new URLSearchParams(window.location.search);
+document.getElementById('sb-url').value = SUPABASE_URL;
+document.getElementById('sb-key').value = SUPABASE_PUBLIC_KEY;
+initSupabase(SUPABASE_URL, SUPABASE_PUBLIC_KEY);
+if (urlParams.get('view') === 'ogrenci') switchMainView('ogrenci');
+};
+
+function toggleSetup() { document.getElementById('setup-box').classList.toggle('hidden'); }
+
+function isClientSafeKey(key) {
+if (key.startsWith('sb_publishable_')) return true;
+try { return JSON.parse(atob(key.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).role === 'anon'; } catch (e) { return false; }
+}
+
+function saveConfig() {
+let url = document.getElementById('sb-url').value.trim();
+let key = document.getElementById('sb-key').value.trim();
+if(!url || !key) { alert('Lütfen URL ve Key alanlarını doldurun!'); return; }
+if (!isClientSafeKey(key)) { alert('Service role/secret anahtarını tarayıcıda kullanmayın. Publishable veya anon anahtar kullanın.'); return; }
+localStorage.setItem('sb_url', url);
+localStorage.setItem('sb_key', key);
+initSupabase(url, key);
+}
+
+function initSupabase(url, key) {
+try {
+supabaseClient = window.supabase.createClient(url, key);
+document.getElementById('setup-box').classList.add('hidden');
+loadData();
+} catch (e) { alert('Bağlantı hatası: ' + e.message); }
+}
+
+async function loadData() {
+if (!supabaseClient) return;
+await loadUyeler();
+await loadKasa();
+await loadStok();
+}
+
+// --- GÖRÜNÜM VE SEKME GEÇİŞLERİ ---
+function switchMainView(view) {
+const vYonetim = document.getElementById('view-yonetim');
+const vOgrenci = document.getElementById('view-ogrenci');
+const btnOg = document.getElementById('btn-view-ogrenci');
+
+if (view === 'ogrenci') {
+vYonetim.classList.add('hidden');
+vOgrenci.classList.remove('hidden');
+document.getElementById('btn-setup').classList.add('hidden');
+btnOg.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> Yönetici Paneli';
+btnOg.setAttribute('onclick', "switchMainView('yonetim')");
+} else {
+vYonetim.classList.remove('hidden');
+vOgrenci.classList.add('hidden');
+document.getElementById('btn-setup').classList.remove('hidden');
+btnOg.classList.remove('hidden');
+btnOg.innerHTML = '<i class="fa-solid fa-user mr-1"></i> Öğrenci Girişi';
+btnOg.setAttribute('onclick', "switchMainView('ogrenci')");
+}
+}
+
+function switchTab(tab) {
+const secUyeler = document.getElementById('sec-uyeler');
+const secStok = document.getElementById('sec-stok');
+const secKasa = document.getElementById('sec-kasa');
+const tabUyeler = document.getElementById('tab-uyeler');
+const tabStok = document.getElementById('tab-stok');
+const tabKasa = document.getElementById('tab-kasa');
+
+secUyeler.classList.add('hidden');
+secStok.classList.add('hidden');
+secKasa.classList.add('hidden');
+tabUyeler.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
+tabStok.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
+tabKasa.className = "flex-1 py-2.5 rounded-lg text-gray-400 hover:text-white transition";
+
+if (tab === 'uyeler') {
+secUyeler.classList.remove('hidden');
+tabUyeler.className = "flex-1 py-2.5 rounded-lg bg-red-600 text-white transition";
+} else if (tab === 'stok') {
+secStok.classList.remove('hidden');
+tabStok.className = "flex-1 py-2.5 rounded-lg bg-red-600 text-white transition";
+} else {
+secKasa.classList.remove('hidden');
+tabKasa.className = "flex-1 py-2.5 rounded-lg bg-green-600 text-white transition";
+}
+}
+
+// --- QR KOD YÖNETİCİ PENCERESİ ---
+function openQrModal() {
+if (typeof QRCode === 'undefined') { alert('QR kod kütüphanesi yüklenemedi.'); return; }
+document.getElementById('qr-modal').classList.remove('hidden');
+const container = document.getElementById('qrcode-container');
+container.innerHTML = '';
+
+const currentUrl = window.location.href.split('?')[0] + '?view=ogrenci';
+new QRCode(container, {
+text: currentUrl,
+width: 180,
+height: 180,
+colorDark: "#000000",
+colorLight: "#ffffff",
+correctLevel: QRCode.CorrectLevel.H
+});
+}
+function closeQrModal() { document.getElementById('qr-modal').classList.add('hidden'); }
+
+// --- ÖĞRENCİ GİRİŞ VE CHECK-IN MANTIĞI ---
+async function ogrenciGirisYap() {
+if (!supabaseClient) { alert('Veritabanı bağlantısı kurulamadı.'); return; }
+const tel = document.getElementById('ogrenci-telefon-input').value.trim();
+const temizTel = normalizePhone(tel);
+if (!temizTel) { alert('Lütfen telefon numaranızı girin!'); return; }
+
+if (uyeLoadError) {
+alert('Üye kayıtları veritabanından yüklenemedi: ' + uyeLoadError.message);
+return;
+}
+const ogrenci = allUyeler.find(u => normalizePhone(u.telefon) === temizTel);
+if (!ogrenci) {
+alert('Bu telefon numarasına ait kayıtlı üye bulunamadı.');
+return;
+}
+
+currentLoggedInUye = ogrenci;
+if (ogrenci.sozlesme_kabul_edildi !== true) {
+pendingAgreementUyeId = ogrenci.id;
+document.getElementById('sozlesme-onay').closest('label').classList.remove('hidden');
+document.getElementById('sozlesme-kabul-btn').classList.remove('hidden');
+document.getElementById('sozlesme-onay').checked = false;
+document.getElementById('sozlesme-kabul-btn').disabled = true;
+document.getElementById('sozlesme-modal').classList.remove('hidden');
+return;
+}
+showOgrenciPanel();
+}
+
+function showOgrenciPanel() {
+renderOgrenciPaneli();
+document.getElementById('ogrenci-detay-alani').classList.remove('hidden');
+}
+
+function renderOgrenciPaneli() {
+if (!currentLoggedInUye) return;
+currentLoggedInUye = allUyeler.find(u => u.id === currentLoggedInUye.id) || currentLoggedInUye;
+
+document.getElementById('og-ad-soyad').innerText = currentLoggedInUye.ad_soyad;
+document.getElementById('og-brans-badge').innerText = currentLoggedInUye.paket;
+document.getElementById('og-bitis').innerText = currentLoggedInUye.bitis_tarihi || '-';
+
+const total = currentLoggedInUye.total_lessons || 12;
+let sessionDates = [];
+try { sessionDates = typeof currentLoggedInUye.session_dates === 'string' ? JSON.parse(currentLoggedInUye.session_dates) : (currentLoggedInUye.session_dates || []); } catch(e) { sessionDates = []; }
+const completed = sessionDates.filter(d => d !== null && d !== undefined && d !== '').length;
+const remaining = Math.max(0, total - completed);
+
+document.getElementById('og-kalan').innerText = remaining;
+document.getElementById('og-toplam').innerText = total;
+
+const listContainer = document.getElementById('ogrenci-seans-listesi');
+listContainer.innerHTML = '';
+
+for (let i = 0; i < total; i++) {
+const tarihStr = sessionDates[i];
+const isCompleted = !!tarihStr;
+
+listContainer.innerHTML += `
+<div class="flex flex-col items-center justify-center p-3 rounded-xl border text-center select-none ${isCompleted ? 'bg-zinc-800/80 border-green-500/50 shadow-md' : 'bg-black/60 border-zinc-800 opacity-60'}">
+<span class="text-xs font-bold ${isCompleted ? 'text-gray-200' : 'text-gray-400'} mb-1">${i + 1}. Seans</span>
+<div class="my-1">
+${isCompleted
+? '<div class="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-black text-xs font-bold"><i class="fa-solid fa-check"></i></div>'
+: '<div class="w-6 h-6 rounded-full border-2 border-zinc-700 bg-zinc-900"></div>'}
+</div>
+<span class="text-[9px] ${isCompleted ? 'text-green-400 font-semibold' : 'text-gray-500'} mt-1">
+${isCompleted ? escapeHtml(tarihStr) : 'Bekliyor'}
+</span>
+</div>
+`;
+}
+}
+
+function isGymQrCode(value) {
+try { const scanned = new URL(value); const current = new URL(window.location.href); return scanned.origin === current.origin && scanned.pathname === current.pathname && scanned.searchParams.get('view') === 'ogrenci'; } catch (e) { return false; }
+}
+
+async function startAttendanceQrScan() {
+if (!currentLoggedInUye) { alert('Önce telefon numaranızla öğrenci girişi yapın.'); return; }
+if (!supabaseClient) { alert('Veritabanı bağlantısı kurulamadı.'); return; }
+if (typeof Html5Qrcode === 'undefined') { alert('QR tarama kütüphanesi yüklenemedi.'); return; }
+attendanceScanBusy = false; document.getElementById('attendance-qr-status').innerText = 'Kamerayı salon QR koduna yöneltin.'; document.getElementById('attendance-qr-modal').classList.remove('hidden');
+try {
+attendanceQrScanner = new Html5Qrcode('attendance-qr-reader');
+await attendanceQrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } }, async (decodedText) => {
+if (attendanceScanBusy) return;
+if (!isGymQrCode(decodedText)) { document.getElementById('attendance-qr-status').innerText = 'Bu salonun QR kodu değil.'; return; }
+attendanceScanBusy = true; document.getElementById('attendance-qr-status').innerText = 'QR doğrulandı, dersiniz işleniyor…';
+try { await stopAttendanceQrScan(); await ogrenciCheckInYap(); } finally { attendanceScanBusy = false; }
+}, () => {});
+} catch (error) { await stopAttendanceQrScan(); alert('Kamera açılamadı: ' + (error?.message || '')); }
+}
+
+async function stopAttendanceQrScan() {
+const scanner = attendanceQrScanner; attendanceQrScanner = null;
+if (scanner) { try { if (scanner.isScanning) await scanner.stop(); } catch (e) {} try { scanner.clear(); } catch (e) {} }
+document.getElementById('attendance-qr-modal').classList.add('hidden');
+}
+
+async function ogrenciCheckInYap() {
+if (!currentLoggedInUye || checkInInProgress) return;
+if (!supabaseClient) { alert('Veritabanı bağlantısı yok.'); return; }
+
+const button = document.querySelector('#ogrenci-detay-alani button[onclick="ogrenciCheckInYap()"]');
+checkInInProgress = true;
+if (button) button.disabled = true;
+try {
+let sessionDates = [];
+try { sessionDates = typeof currentLoggedInUye.session_dates === 'string' ? JSON.parse(currentLoggedInUye.session_dates) : (currentLoggedInUye.session_dates || []); } catch (e) { sessionDates = []; }
+
+const total = Math.max(0, Math.min(100, Number(currentLoggedInUye.total_lessons) || 12));
+let emptyIndex = -1;
+for (let i = 0; i < total; i++) {
+if (!sessionDates[i]) { emptyIndex = i; break; }
+}
+if (emptyIndex === -1) {
+alert('Bu paketteki tüm seanslar tamamlandı.');
+return;
+}
+
+const now = new Date();
+const formatted = now.toLocaleString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' (QR)';
+sessionDates[emptyIndex] = formatted;
+
+const { data, error } = await supabaseClient
+.from('uyeler')
+.update({ session_dates: JSON.stringify(sessionDates) })
+.eq('id', currentLoggedInUye.id)
+.select('*')
+.maybeSingle();
+if (error) throw error;
+if (!data) throw new Error('Kayıt güncellenmedi.');
+
+currentLoggedInUye = data;
+const index = allUyeler.findIndex(u => String(u.id) === String(data.id));
+if (index >= 0) allUyeler[index] = data;
+alert('Seans girişiniz kaydedildi. Osu! 🥋');
+renderOgrenciPaneli();
+} catch (error) {
+alert('Check-in yapılamadı: ' + error.message);
+} finally {
+checkInInProgress = false;
+if (button) button.disabled = false;
+}
+}
+
+function openSozlesmeModal() {
+pendingAgreementUyeId = null;
+document.getElementById('sozlesme-onay').closest('label').classList.add('hidden');
+document.getElementById('sozlesme-kabul-btn').classList.add('hidden');
+document.getElementById('sozlesme-onay').checked = false;
+document.getElementById('sozlesme-kabul-btn').disabled = true;
+document.getElementById('sozlesme-modal').classList.remove('hidden');
+}
+function closeSozlesmeModal() {
+document.getElementById('sozlesme-modal').classList.add('hidden');
+if (pendingAgreementUyeId !== null) { currentLoggedInUye = null; pendingAgreementUyeId = null; }
+}
+async function sozlesmeyiKabulEt() {
+if (!document.getElementById('sozlesme-onay').checked) { alert('Devam etmek için sözleşmeyi kabul etmelisiniz.'); return; }
+if (pendingAgreementUyeId === null || !currentLoggedInUye) return;
+const acceptedAt = new Date().toISOString();
+const { data, error } = await supabaseClient
+.from('uyeler')
+.update({ sozlesme_kabul_edildi: true, sozlesme_kabul_tarihi: acceptedAt })
+.eq('id', pendingAgreementUyeId)
+.select('*')
+.maybeSingle();
+if (error) { alert('Hata: ' + error.message); return; }
+currentLoggedInUye = data;
+const index = allUyeler.findIndex(u => String(u.id) === String(data.id));
+if (index >= 0) allUyeler[index] = data;
+pendingAgreementUyeId = null;
+document.getElementById('sozlesme-modal').classList.add('hidden');
+showOgrenciPanel();
+}
+
+// --- ÜYELER VE AKILLI WHATSAPP ---
+async function loadUyeler() {
+const { data: uyeler, error } = await supabaseClient.from('uyeler').select('*').order('created_at', { ascending: false });
+if (error) { console.error("Üyeler yüklenemedi:", error.message); return; }
+allUyeler = uyeler || [];
+renderUyeler(allUyeler);
+
+document.getElementById('stat-toplam').innerText = allUyeler.length;
+document.getElementById('stat-aktif').innerText = allUyeler.filter(u => u.durum === 'Aktif').length;
+document.getElementById('stat-biten').innerText = allUyeler.filter(u => u.durum === 'Bitişi Yaklaşan').length;
+}
+
+function renderUyeler(list) {
+const tbody = document.getElementById('uye-listesi');
+tbody.innerHTML = '';
+if (list.length === 0) {
+tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-gray-500">Kayıtlı üye bulunamadı.</td></tr>`;
+return;
+}
+list.forEach(u => {
+let badgeClass = u.durum === 'Aktif' ? 'bg-green-950 text-green-400 border-green-800' : (u.durum === 'Bitişi Yaklaşan' ? 'bg-yellow-950 text-yellow-400 border-yellow-800' : 'bg-red-950 text-red-400 border-red-800');
+
+const total = u.total_lessons || 12;
+let sessionDates = [];
+try { sessionDates = typeof u.session_dates === 'string' ? JSON.parse(u.session_dates) : (u.session_dates || []); } catch(e) { sessionDates = []; }
+const completed = sessionDates.filter(d => d !== null && d !== undefined && d !== '').length;
+const remaining = Math.max(0, total - completed);
+
+let telClean = u.telefon ? u.telefon.replace(/\D/g, '') : '';
+if (telClean.startsWith('0')) telClean = '9' + telClean;
+else if (!telClean.startsWith('90') && telClean.length === 10) telClean = '90' + telClean;
+
+const waGenel = encodeURIComponent(`Harder Army MMA: Osu! Merhaba ${u.ad_soyad}, ${u.paket} seans ve üyelik durumunuz hakkında bilgi vermek istedik. Salonumuza bekleriz! 🥋`);
+const waPaketBitiyor = encodeURIComponent(`Harder Army MMA: Osu! Merhaba ${u.ad_soyad}, üyelik bitiş tarihin yaklaşmaktadır (${u.bitis_tarihi || 'yakında'}). Paketini yenilemek için salonumuza bekleriz! 🥋`);
+const waSeansBitiyor = encodeURIComponent(`Harder Army MMA: Osu! Merhaba ${u.ad_soyad}, seanslarında sona yaklaştın (Kalan: ${remaining} ders). Bilgin olsun! 🥋`);
+
+const aktifWaMsg = remaining <= 2 ? waSeansBitiyor : waGenel;
+
+tbody.innerHTML += `
+<tr class="hover:bg-zinc-800/40 transition">
+<td class="p-3.5 font-bold text-white">${escapeHtml(u.ad_soyad)}</td>
+<td class="p-3.5 text-gray-400">
+${escapeHtml(u.telefon || '-')}
+${telClean ? `
+<div class="flex gap-1.5 mt-1">
+<a href="https://wa.me/${telClean}?text=${waGenel}" target="_blank" class="bg-zinc-800 hover:bg-zinc-700 text-green-400 px-2 py-0.5 rounded text-[10px] font-bold border border-zinc-700" title="Genel Mesaj"><i class="fa-brands fa-whatsapp mr-1"></i>Mesaj</a>
+<a href="https://wa.me/${telClean}?text=${waPaketBitiyor}" target="_blank" class="bg-zinc-800 hover:bg-zinc-700 text-yellow-400 px-2 py-0.5 rounded text-[10px] font-bold border border-zinc-700" title="Yenileme Hatırlatması">Hatırlat</a>
+</div>` : ''}
+</td>
+<td class="p-3.5"><span class="bg-zinc-800 px-2 py-1 rounded text-[11px] text-gray-300">${escapeHtml(u.paket)}</span></td>
+<td class="p-3.5">
+<div class="flex items-center gap-2">
+<span class="text-gray-300">Yapılan: <strong class="text-red-500">${completed}</strong> / Kalan: <strong class="text-green-500">${remaining}</strong></span>
+<button onclick="openSeansModal('${u.id}')" class="bg-zinc-800 hover:bg-zinc-700 text-yellow-400 px-2 py-1 rounded text-[10px] font-bold border border-zinc-700 transition"><i class="fa-solid fa-calendar-check mr-1"></i> Seanslar</button>
+</div>
+</td>
+<td class="p-3.5 font-semibold text-green-400">₺${u.ucret}</td>
+<td class="p-3.5 text-gray-400">${escapeHtml(u.bitis_tarihi || '-')}</td>
+<td class="p-3.5"><span class="px-2 py-0.5 rounded border text-[10px] font-bold ${badgeClass}">${escapeHtml(u.durum)}</span></td>
+<td class="p-3.5 text-right space-x-1">
+<button onclick="editUye('${u.id}')" class="bg-zinc-800 hover:bg-zinc-700 text-gray-300 p-1.5 rounded transition"><i class="fa-solid fa-pen"></i></button>
+<button onclick="deleteUye('${u.id}')" aria-label="Üyeyi sil" class="bg-red-950 hover:bg-red-900 text-red-400 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>
+</td>
+</tr>
+`;
+});
+}
+
+function filterUyeler() {
+const q = document.getElementById('uye-ara').value.toLocaleLowerCase('tr-TR');
+const filtered = allUyeler.filter(u => String(u.ad_soyad || '').toLocaleLowerCase('tr-TR').includes(q) || (u.telefon && u.telefon.includes(q)));
+renderUyeler(filtered);
+}
+
+function openUyeModal() {
+document.getElementById('uye-id').value = '';
+document.getElementById('modal-title').innerText = 'Yeni Sporcu Kaydı';
+document.getElementById('uye-form').reset();
+document.getElementById('m-toplam-ders').value = 12;
+document.getElementById('uye-modal').classList.remove('hidden');
+}
+
+function closeUyeModal() { document.getElementById('uye-modal').classList.add('hidden'); }
+
+function editUye(id) {
+const u = allUyeler.find(item => item.id == id);
+if (!u) return;
+document.getElementById('uye-id').value = u.id;
+document.getElementById('modal-title').innerText = 'Sporcu Bilgilerini Düzenle';
+document.getElementById('m-ad').value = u.ad_soyad || '';
+document.getElementById('m-tel').value = u.telefon || '';
+document.getElementById('m-paket').value = u.paket || 'MMA Group';
+document.getElementById('m-ucret').value = u.ucret || '';
+document.getElementById('m-toplam-ders').value = u.total_lessons || 12;
+document.getElementById('m-bitis').value = u.bitis_tarihi || '';
+document.getElementById('m-durum').value = u.durum || 'Aktif';
+document.getElementById('uye-modal').classList.remove('hidden');
+}
+
+async function deleteUye(id) {
+if (!supabaseClient) { alert('Veritabanı bağlantısı yok.'); return; }
+if (!confirm('Bu sporcuyu silmek istediğinize emin misiniz?')) return;
+const { error } = await supabaseClient.from('uyeler').delete().eq('id', id);
+if (error) { alert('Silme hatası: ' + error.message); return; }
+loadData();
+}
+
+async function saveUye(e) {
+e.preventDefault();
+const id = document.getElementById('uye-id').value;
+const adSoyad = document.getElementById('m-ad').value;
+const paket = document.getElementById('m-paket').value;
+const ucret = Number(document.getElementById('m-ucret').value);
+const lessonCount = Number(document.getElementById('m-toplam-ders').value);
+
+const payload = {
+ad_soyad: adSoyad,
+telefon: document.getElementById('m-tel').value,
+paket: paket,
+ucret: ucret,
+total_lessons: lessonCount,
+bitis_tarihi: document.getElementById('m-bitis').value,
+durum: document.getElementById('m-durum').value
+};
+
+let response;
+if (id) {
+response = await supabaseClient.from('uyeler').update(payload).eq('id', id);
+} else {
+payload.baslangic_tarihi = localDateISO();
+response = await supabaseClient.from('uyeler').insert([payload]);
+if (!response.error) {
+await supabaseClient.from('kasa_hareketleri').insert([{
+tip: 'Gelir',
+baslik: `${adSoyad} - ${paket} Aidatı`,
+tutar: ucret,
+kategori: 'Aidat',
+tarih: localDateISO()
+}]);
+}
+}
+if (response.error) { alert('Hata: ' + response.error.message); return; }
+closeUyeModal();
+loadData();
+}
+
+// --- STOK & MALZEME KASASI ---
+async function loadStok() {
+let loaded = false;
+if (supabaseClient) {
+try {
+const { data, error } = await supabaseClient.from('stok_urunler').select('*').order('created_at', { ascending: false });
+if (!error && data && data.length > 0) {
+allStok = data;
+loaded = true;
+}
+} catch(e) { loaded = false; }
+}
+if (!loaded) {
+const saved = localStorage.getItem('harder_army_stok');
+allStok = saved ? JSON.parse(saved) : DEFAULT_STOK;
+}
+renderStok(allStok);
+}
+
+function renderStok(list) {
+const tbody = document.getElementById('stok-listesi');
+tbody.innerHTML = '';
+if (list.length === 0) {
+tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-gray-500">Kayıtlı ürün bulunamadı.</td></tr>`;
+return;
+}
+list.forEach(item => {
+const satilan = item.satilan_adet || 0;
+tbody.innerHTML += `
+<tr class="hover:bg-zinc-800/40 transition">
+<td class="p-3.5 font-bold text-white flex items-center gap-2">
+<i class="fa-solid fa-box text-cyan-400 text-xs"></i>
+<span>${escapeHtml(item.urun_adi)}</span>
+</td>
+<td class="p-3.5 font-semibold text-green-400">₺${Number(item.satis_fiyati).toLocaleString('tr-TR')}</td>
+<td class="p-3.5"><span class="px-2.5 py-1 rounded-full text-xs font-bold ${item.adet > 3 ? 'bg-zinc-800 text-gray-200' : 'bg-red-950 text-red-400 border border-red-800'}">${item.adet} Adet</span></td>
+<td class="p-3.5 font-bold text-yellow-500">${satilan} Adet Satıldı</td>
+<td class="p-3.5 text-right space-x-1">
+<button onclick="urunSat('${item.id}')" class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow"><i class="fa-solid fa-cart-shopping mr-1"></i> Sat (Malzeme Kasasına Ekle)</button>
+<button onclick="deleteStok('${item.id}')" class="bg-red-950 hover:bg-red-900 text-red-400 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>
+</td>
+</tr>
+`;
+});
+}
+
+function openStokModal() {
+document.getElementById('s-ad-select').value = 'Rashguard';
+document.getElementById('s-ad').classList.add('hidden');
+document.getElementById('s-ad').value = 'Rashguard';
+document.getElementById('stok-modal').classList.remove('hidden');
+}
+function closeStokModal() { document.getElementById('stok-modal').classList.add('hidden'); }
+
+function stokSecimDegisti() {
+const val = document.getElementById('s-ad-select').value;
+const input = document.getElementById('s-ad');
+if (val === 'Ozel') {
+input.value = '';
+input.classList.remove('hidden');
+} else {
+input.value = val;
+input.classList.add('hidden');
+}
+}
+
+async function saveStok(e) {
+e.preventDefault();
+const ad = document.getElementById('s-ad').value;
+const fiyat = Number(document.getElementById('s-fiyat').value);
+const adet = Number(document.getElementById('s-adet').value);
+
+const newItem = {
+id: 'stok_' + Date.now(),
+urun_adi: ad,
+satis_fiyati: fiyat,
+adet: adet,
+satilan_adet: 0
+};
+
+if (supabaseClient) {
+try { await supabaseClient.from('stok_urunler').insert([{ urun_adi: ad, satis_fiyati: fiyat, adet: adet, satilan_adet: 0 }]); } catch(e){}
+}
+
+allStok.unshift(newItem);
+localStorage.setItem('harder_army_stok', JSON.stringify(allStok));
+closeStokModal();
+renderStok(allStok);
+}
+
+async function urunSat(id) {
+const product = allStok.find(item => item.id == id);
+if (!product) return;
+if (product.adet <= 0) { alert('Bu ürünün stoğu kalmadı!'); return; }
+if (!confirm(`"${product.urun_adi}" ürününden 1 adet satılacak (₺${product.satis_fiyati}). Malzeme kasasına işlensin mi?`)) return;
+
+product.adet -= 1;
+product.satilan_adet = (product.satilan_adet || 0) + 1;
+
+if (supabaseClient) {
+try {
+await supabaseClient.from('stok_urunler').update({ adet: product.adet, satilan_adet: product.satilan_adet }).eq('id', id);
+} catch(e){}
+}
+
+localStorage.setItem('harder_army_stok', JSON.stringify(allStok));
+
+// Malzeme Kasasına Gelir Olarak Ekle (Özel Kategori ile)
+const payload = {
+tip: 'Gelir',
+baslik: `Malzeme Satışı: ${product.urun_adi}`,
+tutar: product.satis_fiyati,
+kategori: 'Malzeme Kasası',
+tarih: localDateISO()
+};
+await supabaseClient.from('kasa_hareketleri').insert([payload]);
+
+alert('Ürün satışı gerçekleşti ve Malzeme Kasasına işlendi! Osu! 🥋');
+loadData();
+}
+
+async function deleteStok(id) {
+if(!confirm('Bu ürünü listeden silmek istediğinize emin misiniz?')) return;
+allStok = allStok.filter(item => item.id != id);
+localStorage.setItem('harder_army_stok', JSON.stringify(allStok));
+if (supabaseClient) {
+try { await supabaseClient.from('stok_urunler').delete().eq('id', id); } catch(e){}
+}
+renderStok(allStok);
+}
+
+// --- KASA & FİNANSAL RAPORLAR ---
+async function loadKasa() {
+const { data: kasa, error } = await supabaseClient.from('kasa_hareketleri').select('*').order('created_at', { ascending: false });
+if (error) { console.error("Kasa hareketleri yüklenemedi:", error.message); return; }
+allKasa = kasa || [];
+
+renderKasaAySecenekleri();
+renderKasaAy();
+
+// Tüm zamanlar genel toplam
+let totalGelir = 0;
+let totalGider = 0;
+allKasa.forEach(k => {
+const tutar = Number(k.tutar) || 0;
+if (k.tip === 'Gelir') totalGelir += tutar;
+else totalGider += tutar;
+});
+const genelNet = totalGelir - totalGider;
+
+document.getElementById('rapor-toplam-gelir').innerText = `₺${totalGelir.toLocaleString('tr-TR')}`;
+document.getElementById('rapor-toplam-gider').innerText = `₺${totalGider.toLocaleString('tr-TR')}`;
+const genelNetEl = document.getElementById('rapor-net-bakiye');
+genelNetEl.innerText = `₺${genelNet.toLocaleString('tr-TR')}`;
+genelNetEl.className = `text-xl font-black mt-1 ${genelNet >= 0 ? 'text-green-400' : 'text-red-400'}`;
+}
+
+function renderKasaAySecenekleri() {
+const select = document.getElementById('kasa-ay-sec');
+if (!select) return;
+const current = localDateISO().slice(0, 7);
+const months = new Set([current, ...allKasa.map(item => String(item.tarih || '').slice(0, 7)).filter(m => /^\d{4}-\d{2}$/.test(m))]);
+const previous = select.value;
+select.innerHTML = [...months].sort().reverse().map(month => {
+const [year, number] = month.split('-');
+const label = new Date(Number(year), Number(number)-1, 1).toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+return `<option value="${month}">${escapeHtml(label)}</option>`;
+}).join('');
+select.value = months.has(previous) ? previous : current;
+}
+
+function renderKasaAy() {
+const month = document.getElementById('kasa-ay-sec')?.value || localDateISO().slice(0, 7);
+const filtreTur = document.getElementById('kasa-filtre-tur')?.value || 'Tumu';
+
+let movements = allKasa.filter(item => String(item.tarih || '').startsWith(month));
+if (filtreTur !== 'Tumu') {
+movements = movements.filter(item => item.tip === filtreTur);
+}
+
+const monthAll = allKasa.filter(item => String(item.tarih || '').startsWith(month));
+const income = monthAll.filter(item => item.tip === 'Gelir').reduce((sum, item) => sum + (Number(item.tutar) || 0), 0);
+const expense = monthAll.filter(item => item.tip === 'Gider').reduce((sum, item) => sum + (Number(item.tutar) || 0), 0);
+const ayNetBakiye = income - expense;
+
+// Malzeme Kasası Toplamı (Bu aya ait kategori = 'Malzeme Kasası' olanlar)
+const malzemeGelir = monthAll.filter(item => item.kategori === 'Malzeme Kasası' && item.tip === 'Gelir').reduce((sum, item) => sum + (Number(item.tutar) || 0), 0);
+
+document.getElementById('stat-kasa').innerText = `₺${ayNetBakiye.toLocaleString('tr-TR')}`;
+document.getElementById('stat-malzeme-kasa').innerText = `₺${malzemeGelir.toLocaleString('tr-TR')}`;
+
+document.getElementById('kasa-ay-ozet').innerHTML = `Seçilen Ay Özeti: <strong class="text-green-400">Toplam Gelir: ₺${income.toLocaleString('tr-TR')}</strong> · <strong class="text-cyan-400">Malzeme Kasası: ₺${malzemeGelir.toLocaleString('tr-TR')}</strong> · <strong class="text-red-400">Gider: ₺${expense.toLocaleString('tr-TR')}</strong> · Net: <strong class="text-white">₺${ayNetBakiye.toLocaleString('tr-TR')}</strong>`;
+
+renderKasa(movements);
+}
+
+function renderKasa(list) {
+const tbody = document.getElementById('kasa-listesi');
+tbody.innerHTML = '';
+if (list.length === 0) {
+tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">Kriterlere uygun kasa hareketi bulunamadı.</td></tr>`;
+return;
+}
+list.forEach(k => {
+const isGelir = k.tip === 'Gelir';
+const isMalzeme = k.kategori === 'Malzeme Kasası';
+const badge = isGelir ? (isMalzeme ? '<span class="bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded text-[10px] font-bold">Malzeme Kasası</span>' : '<span class="bg-green-950 text-green-400 border border-green-800 px-2 py-0.5 rounded text-[10px] font-bold">Gelir</span>') : '<span class="bg-red-950 text-red-400 border border-red-800 px-2 py-0.5 rounded text-[10px] font-bold">Gider</span>';
+const tutarClass = isGelir ? (isMalzeme ? 'text-cyan-400' : 'text-green-400') : 'text-red-400';
+const tutarSign = isGelir ? '+' : '-';
+
+tbody.innerHTML += `
+<tr class="hover:bg-zinc-800/40 transition">
+<td class="p-3.5 text-gray-400">${escapeHtml(k.tarih || '-')}</td>
+<td class="p-3.5">${badge}</td>
+<td class="p-3.5 font-bold text-white">${escapeHtml(k.baslik)}</td>
+<td class="p-3.5 text-gray-400">${escapeHtml(k.kategori || '-')}</td>
+<td class="p-3.5 text-right font-semibold ${tutarClass}">${tutarSign}₺${Number(k.tutar).toLocaleString('tr-TR')}</td>
+<td class="p-3.5 text-right">
+<button onclick="deleteKasa('${k.id}')" aria-label="Kasa hareketini sil" class="bg-red-950 hover:bg-red-900 text-red-400 p-1.5 rounded transition"><i class="fa-solid fa-trash"></i></button>
+</td>
+</tr>
+`;
+});
+}
+
+function openKasaModal() { document.getElementById('kasa-modal').classList.remove('hidden'); }
+function closeKasaModal() { document.getElementById('kasa-modal').classList.add('hidden'); }
+
+async function saveKasa(e) {
+e.preventDefault();
+const amount = Number(document.getElementById('k-tutar').value);
+const payload = {
+tip: document.getElementById('k-tip').value,
+baslik: document.getElementById('k-baslik').value,
+tutar: amount,
+kategori: document.getElementById('k-kategori').value,
+tarih: localDateISO()
+};
+const { error } = await supabaseClient.from('kasa_hareketleri').insert([payload]);
+if (error) { alert('Hata: ' + error.message); return; }
+closeKasaModal();
+loadData();
+}
+
+async function deleteKasa(id) {
+if(!confirm('Bu kasa hareketini silmek istediğinize emin misiniz?')) return;
+await supabaseClient.from('kasa_hareketleri').delete().eq('id', id);
+loadData();
+}
+
+// --- SEANS PENCERESİ VE TARİH SEÇİMİ ---
+function openSeansModal(id) {
+const u = allUyeler.find(item => item.id == id);
+if (!u) return;
+activeUyeForSeans = u;
+
+document.getElementById('seans-modal-title').innerText = `${u.ad_soyad} Seans Takibi`;
+document.getElementById('seans-modal-paket').innerText = u.paket;
+
+let sessionDates = [];
+try { sessionDates = typeof u.session_dates === 'string' ? JSON.parse(u.session_dates) : (u.session_dates || []); } catch(e) { sessionDates = []; }
+
+const total = u.total_lessons || 12;
+const container = document.getElementById('seans-listesi-container');
+container.innerHTML = '';
+
+let html = `<div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">`;
+for (let i = 0; i < total; i++) {
+const tarihStr = sessionDates[i];
+const isCompleted = !!tarihStr;
+html += `
+<div onclick="tiklaSeansKutusu(${i})" class="flex flex-col items-center justify-center p-3 rounded-xl border text-center cursor-pointer transition select-none ${isCompleted ? 'bg-zinc-800/80 border-green-500/50 shadow-md' : 'bg-black/60 border-zinc-800 hover:border-zinc-700 opacity-75'}">
+<span class="text-xs font-bold ${isCompleted ? 'text-gray-200' : 'text-gray-400'} mb-1.5">${i + 1}. Seans</span>
+<div class="my-1">
+${isCompleted
+? '<div class="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center text-black text-sm font-bold shadow-lg"><i class="fa-solid fa-check"></i></div>'
+: '<div class="w-7 h-7 rounded-full border-2 border-zinc-700 bg-zinc-900"></div>'}
+</div>
+<span class="text-[9px] ${isCompleted ? 'text-green-400 font-semibold' : 'text-gray-600'} mt-1.5 h-4 flex items-center justify-center">
+${isCompleted ? escapeHtml(tarihStr) : 'Tarih Seç'}
+</span>
+</div>
+`;
+}
+html += `</div>`;
+container.innerHTML = html;
+document.getElementById('seans-modal').classList.remove('hidden');
+}
+
+function tiklaSeansKutusu(index) {
+activeSeansIndex = index;
+document.getElementById('tarih-modal-baslik').innerText = `${index + 1}. Seans İçin Tarih & Saat`;
+const now = new Date();
+document.getElementById('secilen-tarih-saat').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+document.getElementById('seans-tarih-modal').classList.remove('hidden');
+}
+
+async function seansiKaydetOnayla() {
+if (activeUyeForSeans === null || activeSeansIndex === null) return;
+const val = document.getElementById('secilen-tarih-saat').value;
+if(!val) { alert('Lütfen tarih ve saat seçin!'); return; }
+
+const d = new Date(val);
+const formatted = `${d.getDate()} ${d.toLocaleString('tr-TR', { month: 'short' })} ${d.getFullYear()} - ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+let sessionDates = [];
+try { sessionDates = typeof activeUyeForSeans.session_dates === 'string' ? JSON.parse(activeUyeForSeans.session_dates) : (activeUyeForSeans.session_dates || []); } catch(e) { sessionDates = []; }
+sessionDates[activeSeansIndex] = formatted;
+
+const { error } = await supabaseClient.from('uyeler').update({ session_dates: JSON.stringify(sessionDates) }).eq('id', activeUyeForSeans.id);
+if (error) { alert('Hata: ' + error.message); return; }
+
+activeUyeForSeans.session_dates = sessionDates;
+closeTarihModal();
+openSeansModal(activeUyeForSeans.id);
+loadUyeler();
+}
+
+async function seansiKaldir() {
+if (activeUyeForSeans === null || activeSeansIndex === null) return;
+let sessionDates = [];
+try { sessionDates = typeof activeUyeForSeans.session_dates === 'string' ? JSON.parse(activeUyeForSeans.session_dates) : (activeUyeForSeans.session_dates || []); } catch(e) { sessionDates = []; }
+if (!sessionDates[activeSeansIndex]) return;
+sessionDates[activeSeansIndex] = null;
+
+await supabaseClient.from('uyeler').update({ session_dates: JSON.stringify(sessionDates) }).eq('id', activeUyeForSeans.id);
+activeUyeForSeans.session_dates = sessionDates;
+closeTarihModal();
+openSeansModal(activeUyeForSeans.id);
+loadUyeler();
+}
+
+function closeSeansModal() { document.getElementById('seans-modal').classList.add('hidden'); activeUyeForSeans = null; }
+function closeTarihModal() { document.getElementById('seans-tarih-modal').classList.add('hidden'); activeSeansIndex = null; }
+</script>
 </body>
 </html>
