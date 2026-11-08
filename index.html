@@ -1410,3 +1410,54 @@ activeSeansIndex = null;
 </script>
 </body>
 </html>
+-- Üyeler
+create table if not exists public.uyeler (
+  id uuid primary key default gen_random_uuid(),
+  ad_soyad text not null,
+  telefon text,
+  paket text,
+  ucret numeric default 0,
+  borc_tutar numeric default 0,
+  total_lessons integer default 12,
+  bitis_tarihi date,
+  durum text default 'Aktif',
+  baslangic_tarihi date,
+  session_dates jsonb default '[]'::jsonb,
+  sozlesme_kabul_edildi boolean default false,
+  sozlesme_kabul_tarihi timestamptz,
+  created_at timestamptz default now()
+);
+
+-- Kasa
+create table if not exists public.kasa_hareketleri (
+  id uuid primary key default gen_random_uuid(),
+  tip text not null,
+  baslik text,
+  tutar numeric default 0,
+  kategori text,
+  tarih date,
+  created_at timestamptz default now()
+);
+
+-- Stok
+create table if not exists public.stok_urunler (
+  id uuid primary key default gen_random_uuid(),
+  urun_adi text not null,
+  kategori text,
+  satis_fiyati numeric default 0,
+  adet integer default 0,
+  created_at timestamptz default now()
+);
+
+-- RLS (okuma/yazma paneli için)
+alter table public.uyeler enable row level security;
+alter table public.kasa_hareketleri enable row level security;
+alter table public.stok_urunler enable row level security;
+
+drop policy if exists "public_all_uyeler" on public.uyeler;
+drop policy if exists "public_all_kasa" on public.kasa_hareketleri;
+drop policy if exists "public_all_stok" on public.stok_urunler;
+
+create policy "public_all_uyeler" on public.uyeler for all using (true) with check (true);
+create policy "public_all_kasa" on public.kasa_hareketleri for all using (true) with check (true);
+create policy "public_all_stok" on public.stok_urunler for all using (true) with check (true);
